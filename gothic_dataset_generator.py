@@ -65,8 +65,8 @@ def render_text(font, text, image_name, font_size=32):
 def main():
     img, annotations = render_text("Vera.ttf", "Ahoj, světe!", "image.png")
 
-    for tuple in annotations:
-        print(tuple)
+    for char_and_pos in annotations:
+        print(char_and_pos)    
 
     return 0;
 
