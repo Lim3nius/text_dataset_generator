@@ -5,7 +5,6 @@ from freetype import *
 import numpy as np
 
 def calculate_bounding_box(face, text):
-    characters_position = []
     slot = face.glyph
     width, height, baseline, width_add = 0, 0, 0, 0
     previous = 0
@@ -16,15 +15,14 @@ def calculate_bounding_box(face, text):
                      bitmap.rows + max(0,-(slot.bitmap_top-bitmap.rows)))
         baseline = max(baseline, max(0,-(slot.bitmap_top-bitmap.rows)))
         kerning = face.get_kerning(previous, c)
-        width_add = (slot.advance.x >> 6) + (kerning.x >> 6)
-        characters_position.append(width + width_add / 2)
-        width += width_add
+        width += (slot.advance.x >> 6) + (kerning.x >> 6)
         previous = c
 
-    return width, height, baseline, characters_position
+    return width, height, baseline
 
 
-def render_text(face, text, width, height, baseline, image_array):
+def render_text_to_bitmap(face, text, width, height, baseline, image_array):
+    characters_position = []
     slot = face.glyph
     x, y = 0, 0
     previous = 0
@@ -38,28 +36,37 @@ def render_text(face, text, width, height, baseline, image_array):
         kerning = face.get_kerning(previous, c)
         x += (kerning.x >> 6)
         image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h,w)
+        characters_position.append(x + w / 2)
         x += (slot.advance.x >> 6)
         previous = c
 
+    return characters_position
 
-def main():
-    face = Face('./Vera.ttf')
-    text = 'Hello World !'
-    face.set_char_size( 48*64 )
 
-    width, height, baseline, positions = calculate_bounding_box(face, text);
+def render_text(font, text, image_name, font_size=32):
+    font_size_coeficient = 64
+    face = Face(font)
+    face.set_char_size(font_size * font_size_coeficient)
+
+    width, height, baseline = calculate_bounding_box(face, text);
 
     img = np.zeros((height,width), dtype=np.ubyte)
 
-    render_text(face, text, width, height, baseline, img)
+    positions = render_text_to_bitmap(face, text, width, height, baseline, img)
 
     annotations = zip(text, positions)
+    
+    im = Image.fromarray(255 - img)
+    im.save(image_name)
 
-    for t in annotations:
-        print(t)
+    return img, annotations
 
-    im = Image.fromarray(img)
-    im.save('test.png')
+
+def main():
+    img, annotations = render_text("Vera.ttf", "Ahoj, světe!", "image.png")
+
+    for tup in annotations:
+        print(tup)
 
     return 0;
 
