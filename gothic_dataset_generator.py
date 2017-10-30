@@ -22,18 +22,31 @@ def calculate_bounding_box(face, text):
 
 
 def render_text_to_bitmap(face, text, width, height, baseline, image_array):
+    previous_was_space = False
+    previous_slot_advance_x = 0
     characters_position = []
     slot = face.glyph
     x, y = 0, 0
     previous = 0
     for c in text:
         face.load_char(c)
+
+        if previous_was_space:
+            characters_position[-1] += previous_slot_advance_x / 2
+            previous_was_space = False
+
         bitmap = slot.bitmap
         top = slot.bitmap_top
         left = slot.bitmap_left
         w,h = bitmap.width, bitmap.rows
         y = height-baseline-top
         kerning = face.get_kerning(previous, c)
+
+
+        if c == ' ':
+            previous_was_space = True
+            previous_slot_advance_x = (slot.advance.x >> 6)
+
         x += (kerning.x >> 6)
         image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h,w)
         characters_position.append(x + w / 2)
@@ -63,7 +76,7 @@ def render_text(font, text, image_name, font_size=32):
 
 
 def main():
-    img, annotations = render_text("Vera.ttf", "Ahoj, světe!", "image.png")
+    img, annotations = render_text("gothic.ttf", "Hello, world!", "image.png", 128)
 
     for char_and_pos in annotations:
         print(char_and_pos)    
