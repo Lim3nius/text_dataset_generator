@@ -75,11 +75,46 @@ def render_text(font, text, image_name, font_size=32):
     return img, annotations
 
 
-def main():
-    img, annotations = render_text("gothic.ttf", "Hello, world!", "image.png", 128)
+def parse_arguments():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input', help='Input text file name.')
+    parser.add_argument('-o', '--output', help='Output directory name.')
+    parser.add_argument('-f', '--font', help='Font file name.')
+    parser.add_argument('-s', '--size', help='Font size.')
+    args = parser.parse_args()
+    return args
 
-    for char_and_pos in annotations:
-        print(char_and_pos)    
+
+def read_file(file_name):
+    content = []
+
+    with open(file_name, "r") as f_read:
+        for line in f_read:
+            content.append(line.rstrip())
+    
+    return content
+
+
+def write_annotation_file(annotations, file_name):
+    with open(file_name, "w") as f_write:
+        for annotation in annotations:
+            f_write.write(str(annotation) + "\r\n")
+
+
+def create_directory_if_not_exists(dir_name):
+    import os
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+
+def main():
+    args = parse_arguments()
+    content = read_file(args.input)
+    create_directory_if_not_exists(args.output)
+        
+    for index, line in enumerate(content):
+        img, annotations = render_text(args.font, line, args.output + "/image_" + str(index) + ".png", int(args.size))
+        write_annotation_file(annotations, args.output + "/image_" + str(index) + ".txt")
 
     return 0;
 
