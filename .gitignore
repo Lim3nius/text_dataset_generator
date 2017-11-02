@@ -104,3 +104,4 @@ ENV/
 *.pyproj
 /.vs
 *.png
+/outputs
