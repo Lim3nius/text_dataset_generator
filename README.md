@@ -1,9 +1,9 @@
 # Gothic dataset generator
 
-How to run the script:
+How to run the script:  
 ``python gothic_dataset_generator.py -i [input_file] -o [outputs_dir] -f [font_name] -s [font_size]``
 
-Example:
+Example:  
 ``python gothic_dataset_generator.py -i input_file.txt -o outputs -f gothic.ttf -s 50``
 
 ![script output image](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image.png)
