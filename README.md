@@ -1,19 +1,19 @@
 # Gothic dataset generator
 
 How to run the script:  
-``usage: gothic_dataset_generator.py [-h] -i INPUT -o OUTPUT -f FONT -s SIZE -b``
-``                                   BACKGROUND [-a]``
-``optional arguments:``
-``  -h, --help            show this help message and exit``
-``  -i INPUT, --input INPUT``
-``                        Input text file name.``
-``  -o OUTPUT, --output OUTPUT``
-``                        Output directory name.``
-``  -f FONT, --font FONT  Font file name.``
-``  -s SIZE, --size SIZE  Font size.``
-``  -b BACKGROUND, --background BACKGROUND``
-``                        Background texture.``
-``  -a, --annotations     Show annotations.``
+``usage: gothic_dataset_generator.py [-h] -i INPUT -o OUTPUT -f FONT -s SIZE -b``  
+``                                   BACKGROUND [-a]``  
+``optional arguments:``  
+``  -h, --help            show this help message and exit``  
+``  -i INPUT, --input INPUT``  
+``                        Input text file name.``  
+``  -o OUTPUT, --output OUTPUT``  
+``                        Output directory name.``  
+``  -f FONT, --font FONT  Font file name.``  
+``  -s SIZE, --size SIZE  Font size.``  
+``  -b BACKGROUND, --background BACKGROUND``  
+``                        Background texture.``  
+``  -a, --annotations     Show annotations.``  
 
 Example:  
 ``python gothic_dataset_generator.py -i input_file.txt -o outputs -f gothic.ttf -s 50 -b paper.jpg -a``
