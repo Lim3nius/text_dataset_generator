@@ -6,7 +6,8 @@ How to run the script:
 Example:  
 ``python gothic_dataset_generator.py -i input_file.txt -o outputs -f gothic.ttf -s 50``
 
-![script output image](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image.png)
+![script output image](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image.png)  
+![script output image with background](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image_background.png)
 
 Script output:
 
