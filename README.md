@@ -1,10 +1,10 @@
 # Gothic dataset generator
 
 How to run the script:  
-``python gothic_dataset_generator.py -i [input_file] -o [outputs_dir] -f [font_name] -s [font_size] -b [background_image]``
+``python gothic_dataset_generator.py -i <input_file> -o <outputs_dir> -f <font_name> -s <font_size> -b <background_image> [-a]``
 
 Example:  
-``python gothic_dataset_generator.py -i input_file.txt -o outputs -f gothic.ttf -s 50 -b paper.jpg``
+``python gothic_dataset_generator.py -i input_file.txt -o outputs -f gothic.ttf -s 50 -b paper.jpg -a``
 
 ![script output image](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image.png)  
 ![script output image with background](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image_background.png)
