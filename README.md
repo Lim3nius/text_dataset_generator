@@ -5,9 +5,9 @@ How to run the script:
 
 Example:  
 ``python gothic_dataset_generator.py -i input_file.txt -o outputs -f gothic.ttf -s 50 -b paper.jpg -a``
-
-![script output image](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image.png)  
+  
 ![script output image with background](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image_background.png)
+![script output image with drawn position annotations](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image_annotated.png)
 
 Script output:
 
@@ -25,4 +25,3 @@ Script output:
 ``('d', 574.0)``  
 ``('!', 617.0)``  
 
-![script output image with drawn position annotations](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image_annotated.png)
