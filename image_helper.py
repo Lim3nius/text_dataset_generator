@@ -18,3 +18,13 @@ def place_text_on_background(text_image, background):
     result = cv2.GaussianBlur(result,(5,5),0)
 
     return result
+
+def draw_annotations(img, annotations, color=[255,0,0]):
+    result = np.copy(img)
+
+    for annotation in annotations:
+        position = annotation[1]
+        result[:, position] = color
+
+    return result
+
