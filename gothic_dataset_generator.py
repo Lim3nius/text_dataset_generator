@@ -16,13 +16,14 @@ def parse_arguments():
     parser.add_argument('-s', '--size', help='Font size.', required=True)
     parser.add_argument('-b', '--background', help='Background texture.', required=True)
     parser.add_argument('-a', '--annotations', help='Show annotations.', action='store_true')
+    parser.add_argument('-w', '--words', help='Generate dataset for single words.', action='store_true')
     args = parser.parse_args()
     return args
 
 
 def main():
     args = parse_arguments()
-    content = file_helper.read_file(args.input)
+    content = file_helper.read_file(args.input, args.words)
     file_helper.create_directory_if_not_exists(args.output)
 
     for index, line in enumerate(content):

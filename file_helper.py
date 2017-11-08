@@ -1,13 +1,19 @@
 from PIL import Image
 import numpy as np
+import string
 
 
-def read_file(file_name):
+def read_file(file_name, words=False):
     content = []
 
     with open(file_name, "r") as f_read:
         for line in f_read:
-            content.append(line.rstrip())
+            if words:
+                splitted_words = line.rstrip().split()
+                for single_word in splitted_words:
+                    content.append(single_word.translate(None, string.punctuation))
+            else:
+                content.append(line.rstrip())
     
     return content
 
