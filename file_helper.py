@@ -24,6 +24,11 @@ def write_annotation_file(annotations, file_name):
         for annotation in annotations:
             f_write.write(str(annotation) + "\r\n")
 
+def write_file(content, file_name):
+    with open(file_name, "w") as f_write:
+        for line in content:
+            f_write.write(str(line) + "\r\n")
+
 
 def create_directory_if_not_exists(dir_name):
     import os
