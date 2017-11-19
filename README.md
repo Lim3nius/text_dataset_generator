@@ -1,7 +1,7 @@
 # Gothic dataset generator
 
 How to run the script:  
-``gothic_dataset_generator.py [-h] -i INPUT -o OUTPUT -f FONT -s SIZE -b BACKGROUND [-a]``  
+``gothic_dataset_generator.py [-h] -i INPUT -o OUTPUT -f FONT -s SIZE -b BACKGROUND [-a] [-w]``  
 
 Example:  
 ``python gothic_dataset_generator.py -i input_file.txt -o outputs -f gothic.ttf -s 50 -b paper.jpg -a``
