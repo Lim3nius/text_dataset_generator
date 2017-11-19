@@ -105,15 +105,13 @@ def main():
                                                    padding_left=config['Padding']['left'],
                                                    padding_right=config['Padding']['right'])
         
-        text_img = effects_helper.apply_effects(text_img, line, words_dict, config)
-
-        result = image_helper.place_text_on_background(text_img, background)
+        result = effects_helper.apply_effects(text_img, line, words_dict, background, config)
 
         file_helper.write_image(result, config['Common']['outputs'] + "/image_" + str(index) + ".png")
         file_helper.write_annotation_file(annotations, config['Common']['outputs'] + "/image_" + str(index) + ".txt")
 
         if config['Common']['annotations']:
-            result = image_helper.draw_annotations(result, annotations)
+            result = image_helper.draw_annotations(result, annotations, config['Padding']['left'])
             file_helper.write_image(result, config['Common']['outputs'] + "/image_" + str(index) + "_annotations.png")
 
                 

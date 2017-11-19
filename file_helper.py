@@ -38,8 +38,12 @@ def write_image(img, path):
 
 def read_image(path):
     img = Image.open(path)
-    return np.array(img)
+    img = np.array(img)
 
+    if img.shape[2] == 4:
+        img = img[:,:,:3]
+    
+    return img
 
 
 def load_all_images(dir_name):
