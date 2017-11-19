@@ -5,7 +5,7 @@ import numpy as np
 
 def _calculate_bounding_box(face, text):
     slot = face.glyph
-    width, height, baseline, width_add = 0, 0, 0, 0
+    width, height, baseline = 0, 0, 0
     previous = 0
     for i, c in enumerate(text):
         face.load_char(c)
@@ -17,7 +17,7 @@ def _calculate_bounding_box(face, text):
         width += (slot.advance.x >> 6) + (kerning.x >> 6)
         previous = c
 
-    return width, height, baseline
+    return width * 2, height, baseline
 
 
 def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
@@ -47,7 +47,17 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
             previous_slot_advance_x = (slot.advance.x >> 6)
 
         x += (kerning.x >> 6)
-        image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h,w)
+
+        #print(text)
+        #print("x",x)
+        #print("y",y)
+        #print("h",h)
+        #print("w",w)
+        #print(len(bitmap.buffer))
+
+        #print(image_array.shape)
+
+        image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h, w)
         characters_position.append(x + w / 2)
         x += (slot.advance.x >> 6)
         previous = c
@@ -66,6 +76,8 @@ def render_text(font, text, font_size=32):
 
     positions = _render_text_to_bitmap(face, text, width, height, baseline, img)
 
+    img = _remove_trailing_space(img)
+
     annotations = zip(text, positions)
     
     return _grayscale_to_rgba(img), annotations
@@ -79,3 +91,10 @@ def _grayscale_to_rgba(img):
     ret[:, :, 2] = 255 - img
     ret[:, :, 3] = img
     return ret
+
+
+def _remove_trailing_space(img):
+    while sum(img[:, -1]) == 0:
+        img = np.delete(img, -1, 1)
+
+    return img
