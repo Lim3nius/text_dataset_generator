@@ -137,7 +137,7 @@ def main():
         output_classes_content.append("image_" + str(index) + ".png" + "\t" + line)
 
         if config['Common']['annotations']:
-            result = image_helper.draw_annotations(result, annotations, config['Padding']['left'])
+            result = image_helper.draw_annotations(result, annotations)
             file_helper.write_image(result, config['Common']['outputs'] + train_or_test + "image_" + str(index) + "_annotations.png")
 
         print("Completed " + str(index + 1) + "/" + str(total) + ".", end="\r")

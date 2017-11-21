@@ -48,11 +48,11 @@ def get_random_part_of_texture(width, height, texture):
     return result
     
 
-def draw_annotations(img, annotations, left_padding, color=[255,0,0]):
+def draw_annotations(img, annotations, color=[255,0,0]):
     result = np.copy(img)
     
     for annotation in annotations:
-        position = annotation[1] + left_padding
+        position = annotation[1]
         result[:, position] = color
 
     return result
