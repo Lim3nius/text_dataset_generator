@@ -84,6 +84,13 @@ def build_dict(content):
 
     return words_dict
 
+def update_annotations(annotations, padding):
+    new_annotations = []
+    for annotation in annotations:
+        new_annotations.append((annotation[0], annotation[1] + padding))
+
+    return new_annotations
+
 
 def main():
     args = parse_arguments()
@@ -119,6 +126,8 @@ def main():
                                                    padding_bottom=config['Padding']['bottom'],
                                                    padding_left=config['Padding']['left'],
                                                    padding_right=config['Padding']['right'])
+
+        annotations = update_annotations(annotations, config['Padding']['left'])
         
         result = effects_helper.apply_effects(text_img, line, words_dict, background, config)
 
