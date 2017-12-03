@@ -105,3 +105,4 @@ ENV/
 /.vs
 *.png
 /outputs
+/gothic_dataset_generator.zip

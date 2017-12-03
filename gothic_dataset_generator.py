@@ -117,7 +117,8 @@ def main():
             train_or_test = "test/"
             output_classes_content = []
 
-        line = line_original.lower()
+        line = line_original.lower()        
+
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
         text_img, annotations = text_renderer.render_text(config['Common']['font'], line, config['Common']['fontsize'])
         
