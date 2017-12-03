@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import sys
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -61,16 +62,39 @@ def read_subdir(subdir, word_dict):
     return images, classes
 
 
-def read(directory="../Outputs/"):
+def resize_images(image_list, target_size=(192,128)):
+    new_list = []
+    for img in image_list:
+        new_list.append(cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC))
+
+    return new_list
+
+
+
+def read(directory="../Outputs/", target_size=(192,128)):
     word_dict = build_dict(directory)
     train_images, train_labels = read_subdir(directory + "train/", word_dict)
     test_images, test_labels = read_subdir(directory + "test/", word_dict)
+
+    train_images = resize_images(train_images, target_size)
+    test_images = resize_images(test_images, target_size)
+
+    train_images = np.asarray(train_images)
+    train_labels = np.asarray(train_labels)
+    test_images = np.asarray(test_images)
+    test_labels = np.asarray(test_labels)
 
     return train_images, train_labels, test_images, test_labels
 
 
 def main():
     train_images, train_labels, test_images, test_labels = read()
+
+    print("Train images: ", train_images.shape)
+    print("Train labels: ", train_labels.shape)
+    print("Test images: ", test_images.shape)
+    print("Test labels: ", test_labels.shape)
+
     return 0
 
 
