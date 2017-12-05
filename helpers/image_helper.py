@@ -35,16 +35,6 @@ def get_random_part_of_texture(width, height, texture):
 
     result = np.copy(texture[y:y+height, x:x+width])
     
-    #print("GRPoT")
-    #print("---")
-    #print(texture.shape)
-    #print(x)
-    #print(y)
-    #print(width)
-    #print(height)
-    #print(result.shape)
-    #print("---")
-
     return result
     
 
