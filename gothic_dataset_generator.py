@@ -5,11 +5,13 @@ from PIL import Image
 import numpy as np
 import ConfigParser
 import random
+import math
 
-import file_helper
-import image_helper
-import text_renderer
-import effects_helper
+from helpers import file_helper
+from helpers import image_helper
+from helpers import effects_helper
+from helpers import text_renderer
+
 
 def parse_configuration(config_path):
     config_dict = {}
@@ -61,14 +63,6 @@ def parse_float(s, value=None):
 def parse_arguments():
     import argparse
     parser = argparse.ArgumentParser()
-    #parser.add_argument('-i', '--input', help='Input text file name.', required=True)
-    #parser.add_argument('-o', '--output', help='Output directory name.', required=True)
-    #parser.add_argument('-f', '--font', help='Font file name.', required=True)
-    #parser.add_argument('-s', '--size', help='Font size.', required=True)
-    #parser.add_argument('-b', '--background', help='Background texture.', required=True)
-    #parser.add_argument('-a', '--annotations', help='Show annotations.', action='store_true')
-    #parser.add_argument('-w', '--words', help='Generate dataset for single words.', action='store_true')
-    
     parser.add_argument('-c', '--config', help='Path to the configuration file.', required=True)
     args = parser.parse_args()
     return args
@@ -90,6 +84,17 @@ def update_annotations(annotations, padding):
         new_annotations.append((annotation[0], annotation[1] + padding))
 
     return new_annotations
+
+
+def set_paddings(img, config):
+    height, width, _ = img.shape
+
+    config['Padding'] = {
+        'top': int(math.floor((config['OutputSize']['height'] - height) / 2)),
+        'bottom': int(math.ceil((config['OutputSize']['height'] - height) / 2)),
+        'left': int(math.floor((config['OutputSize']['width'] - width) / 2)),
+        'right': int(math.ceil((config['OutputSize']['width'] - width) / 2))
+    }
 
 
 def main():
@@ -122,6 +127,8 @@ def main():
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
         text_img, annotations = text_renderer.render_text(config['Common']['font'], line, config['Common']['fontsize'])
         
+        set_paddings(text_img, config)
+
         text_img = image_helper.add_padding_to_img(text_img, 
                                                    padding_top=config['Padding']['top'],
                                                    padding_bottom=config['Padding']['bottom'],

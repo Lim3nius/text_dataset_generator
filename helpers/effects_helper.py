@@ -2,7 +2,7 @@
 import random
 
 import image_helper
-from Effects import surrounding_text_effect, back_page_text_effect
+from effects import surrounding_text_effect, back_page_text_effect
 
 
 def apply_effects(img, text, words_dict, background, config):

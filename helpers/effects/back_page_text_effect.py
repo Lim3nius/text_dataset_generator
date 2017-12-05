@@ -3,14 +3,14 @@ import sys
 import random
 import numpy as np
 
-import image_helper
-import text_renderer
+from helpers import image_helper
+from helpers import text_renderer
 
 def generate_back_image(width, height, text, word_dict, config):
     back_text = []
 
-    number_of_lines = 10
-    line_length_coef = 20
+    number_of_lines = 7
+    line_length_coef = 10
 
     for line in range(number_of_lines):
         current_line = ""
