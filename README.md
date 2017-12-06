@@ -1,4 +1,4 @@
-# Gothic dataset generator
+ # Gothic dataset generator
 
 How to run the script:  
 ``gothic_dataset_generator.py [-h] -c CONFIG``  
@@ -11,7 +11,7 @@ Example:
 
 Annotations output:
 ``('l', 82)`` 
-``('o', 99)``
-``('r', 118)``
-``('e', 136)``
-``('m', 163)``
+``('o', 99)``  
+``('r', 118)``  
+``('e', 136)``  
+``('m', 163)``  
