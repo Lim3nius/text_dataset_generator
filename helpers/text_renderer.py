@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 from freetype import *
 import numpy as np
 
@@ -17,7 +17,7 @@ def _calculate_bounding_box(face, text):
         width += (slot.advance.x >> 6) + (kerning.x >> 6)
         previous = c
 
-    return width * 2, height, baseline
+    return width * 2, height * 2, baseline
 
 
 def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
@@ -41,13 +41,12 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
         y = height-baseline-top
         kerning = face.get_kerning(previous, c)
 
-
         if c == ' ':
             previous_was_space = True
             previous_slot_advance_x = (slot.advance.x >> 6)
 
         x += (kerning.x >> 6)
-
+        
         image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h, w)
         characters_position.append(x + w / 2)
         x += (slot.advance.x >> 6)
@@ -87,5 +86,11 @@ def _grayscale_to_rgba(img):
 def _remove_trailing_space(img):
     while sum(img[:, -1]) == 0:
         img = np.delete(img, -1, 1)
+
+    while sum(img[-1, :]) == 0:
+        img = np.delete(img, -1, 0)
+        
+    while sum(img[0, :]) == 0:
+        img = np.delete(img, 0, 0)
 
     return img
