@@ -38,6 +38,9 @@ def create_directory_if_not_exists(dir_name):
 
 def write_image(img, path):
     im = Image.fromarray(img)
+    if im.mode != 'RGB':
+        im = im.convert('RGB')
+
     im.save(path)
 
 

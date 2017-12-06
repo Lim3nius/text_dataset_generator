@@ -48,15 +48,6 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
 
         x += (kerning.x >> 6)
 
-        #print(text)
-        #print("x",x)
-        #print("y",y)
-        #print("h",h)
-        #print("w",w)
-        #print(len(bitmap.buffer))
-
-        #print(image_array.shape)
-
         image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h, w)
         characters_position.append(x + w / 2)
         x += (slot.advance.x >> 6)

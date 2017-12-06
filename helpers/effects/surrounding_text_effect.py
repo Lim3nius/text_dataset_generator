@@ -8,7 +8,7 @@ def apply_effect(img, text, word_dict, config):
     img_height, img_width, _ = img.shape
 
     surrounding_text_left_right = ""
-    while len(surrounding_text_left_right) < len(text) * 3:
+    while len(surrounding_text_left_right) < len(text) * 5:
         word = word_dict.keys()[random.randint(0, len(word_dict.keys()) - 1)]
         if word == text:
             continue
@@ -20,7 +20,7 @@ def apply_effect(img, text, word_dict, config):
     surrounding_text_top_bottom = []
 
     number_of_lines = 4
-    line_length_coef = 15
+    line_length_coef = 20
 
     for line in range(number_of_lines):
         current_line = ""

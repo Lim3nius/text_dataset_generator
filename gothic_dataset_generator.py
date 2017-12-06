@@ -95,11 +95,6 @@ def set_paddings(img, config):
         'left': int(math.floor((config['OutputSize']['width'] - width) / 2.)),
         'right': int(math.ceil((config['OutputSize']['width'] - width) / 2.))
     }
-    print(height)
-    print(config['Padding']['top'])
-    print(config['Padding']['bottom'])
-    print(height + config['Padding']['top'] + config['Padding']['bottom'])
-
 
 
 def main():
