@@ -1,5 +1,9 @@
 import random
 import numpy as np
+import cv2
+import sys
+
+from opensimplex import OpenSimplex
 
 from helpers import text_renderer
 
@@ -65,3 +69,46 @@ def set_surroundings(img, img_top_bottom, img_left_right, config):
 
     return np.copy(img)
 
+
+def generate_map_config(config):
+    width = config['OutputSize']['width']
+    height = config['OutputSize']['height']
+    coef = random.uniform(config['PrintingImperfections']['mincoef'], config['PrintingImperfections']['maxcoef'])
+    max_color = config['PrintingImperfections']['maxcolor']
+    subtract_min = config['PrintingImperfections']['subtractmin']
+
+    return generate_map(width, height, coef, max_color, subtract_min)
+
+
+def generate_map(width, height, coef, max_color, subtract_min=True):
+    simplex = OpenSimplex(seed=random.randint(0, sys.maxsize))
+    img = np.zeros((height, width))
+
+    for y in range(height):
+        for x in range(width):
+            img[y, x] = int((simplex.noise2d(x * coef, y * coef) + 1) / 2.0 * max_color)
+               
+    if subtract_min:
+        img = img - np.amin(img)
+        
+    return img
+
+
+def generate_map_blobs(config):    
+    width = config['OutputSize']['width']
+    height = config['OutputSize']['height']
+
+    img = np.zeros((height, width))
+
+    number_of_blobs = random.randint(0, config['PrintingImperfections']['maxblobs'])
+    for blob in range(number_of_blobs):
+        row = random.randint(0, height - 1)
+        col = random.randint(0, width - 1)
+
+        img[row, col] = random.randint(config['PrintingImperfections']['minblobcolor'], config['PrintingImperfections']['maxblobcolor'])
+    
+    kernel = np.ones((5,5), np.uint8)
+    img = cv2.dilate(img, kernel, iterations=1)
+    img = cv2.GaussianBlur(img, (5,5), 0)
+
+    return img

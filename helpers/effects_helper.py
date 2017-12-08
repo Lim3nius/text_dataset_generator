@@ -3,7 +3,7 @@ import random
 
 import file_helper
 import image_helper
-from effects import surrounding_text_effect, back_page_text_effect, printing_imperfections_effect
+from effects import surrounding_text_effect, back_page_text_effect, printing_imperfections_effect, blurry_text_effect
 
 
 def apply_effects(img, text, words_dict, font, background, config):
@@ -18,4 +18,5 @@ def apply_effects(img, text, words_dict, font, background, config):
         background = image_helper.place_text_on_background(back_text, background, alpha_coef)
 
     img = image_helper.place_text_on_background(img, background)
+    img = blurry_text_effect.apply_effect(img, config)
     return img
