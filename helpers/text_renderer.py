@@ -57,6 +57,7 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
 
 def render_text(font, text, font_size=32):
     font_size_coeficient = 64
+    
     face = Face(font)
     face.set_char_size(font_size * font_size_coeficient)
 
@@ -70,7 +71,7 @@ def render_text(font, text, font_size=32):
 
     annotations = zip(text, positions)
     
-    return _grayscale_to_rgba(img), annotations
+    return _grayscale_to_rgba(img), annotations, baseline
 
 
 def _grayscale_to_rgba(img):

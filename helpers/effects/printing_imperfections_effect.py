@@ -13,6 +13,9 @@ def apply_effect(img, config):
     
     alpha = np.copy(img[:, :, -1]) / 255.
 
+    #print("Alpha ", alpha.shape)
+    #print("Map ", generated_map.shape)
+
     alpha *= generated_map
     alpha *= generated_blobs
 

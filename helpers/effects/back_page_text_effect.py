@@ -14,7 +14,7 @@ def generate_back_image(width, height, text, word_dict, font, config):
     number_of_lines = 7
 
     for line in range(number_of_lines):
-        current_line = helper.generate_text_line(text, word_dict, len(text) * 10)
+        current_line = helper.generate_text_line(text, word_dict, font, config)
         back_text.append(current_line)
 
     back_text_img = helper.generate_text_image(back_text, font, config)

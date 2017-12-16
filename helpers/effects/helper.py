@@ -7,12 +7,24 @@ from opensimplex import OpenSimplex
 
 from helpers import text_renderer
 
-def generate_text_line(word, word_dict, minimal_length):
+def generate_text_line(current_word, word_dict, font, config, output_size_coef=2, number_of_added_words=5):
+    target_width = config["OutputSize"]["width"] * output_size_coef
     text = ""
-    while len(text) < minimal_length:
+
+    for i in range(number_of_added_words):
         new_word = word_dict.keys()[random.randint(0, len(word_dict.keys()) - 1)]
-        if new_word != word:
+        if new_word != current_word:
             text += new_word + " "
+
+    line_img, _, _ = text_renderer.render_text(font, text, config['Common']['fontsize'])
+
+    while line_img.shape[1] < target_width:
+        for i in range(number_of_added_words):
+            new_word = word_dict.keys()[random.randint(0, len(word_dict.keys()) - 1)]
+            if new_word != current_word:
+                text += new_word + " "
+
+        line_img, _, _ = text_renderer.render_text(font, text, config['Common']['fontsize'])
 
     return text
 
@@ -21,7 +33,7 @@ def generate_text_image(text, font, config):
     min_width = None
     lines = []
     for line in text:
-        line_img, _ = text_renderer.render_text(font, line, config['Common']['fontsize'])
+        line_img, _, _ = text_renderer.render_text(font, line, config['Common']['fontsize'])
         lines.append(line_img)
 
         line_width = line_img.shape[1]
@@ -59,13 +71,13 @@ def set_surroundings(img, img_top_bottom, img_left_right, config):
     if bottom_offset > 0:
         img[-bottom_offset:, :min(img_width, bottom_text_img.shape[1])] = bottom_text_img
 
-    img_top_offset = (img_height - left_text_img.shape[0]) / 2
+    img_bottom_offset = config["Padding"]["bottom"] + (config["Baseline"]["text"] - config["Baseline"]["surrounding"])
 
     if left_offset > 0:
-        img[img_top_offset:img_top_offset + left_text_img.shape[0], :left_offset] = left_text_img
+        img[-(img_bottom_offset + left_text_img.shape[0]):-img_bottom_offset, :left_offset] = left_text_img
 
     if right_offset > 0:
-        img[img_top_offset:img_top_offset + right_text_img.shape[0], -right_offset:] = right_text_img
+        img[-(img_bottom_offset + left_text_img.shape[0]):-img_bottom_offset, -right_offset:] = right_text_img
 
     return np.copy(img)
 

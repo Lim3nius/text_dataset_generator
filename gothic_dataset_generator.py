@@ -95,7 +95,7 @@ def set_paddings(img, config):
         'left': int(math.floor((config['OutputSize']['width'] - width) / 2.)),
         'right': int(math.ceil((config['OutputSize']['width'] - width) / 2.))
     }
-
+    
 
 def main():
     args = parse_arguments()
@@ -115,7 +115,7 @@ def main():
     train_or_test = "train/"
 
     output_classes_content = []
-
+    
     for index, line_original in enumerate(content):
 
         if train_or_test == "train/" and float(index)/float(total) > config['Common']['trainratio']:
@@ -123,12 +123,13 @@ def main():
             train_or_test = "test/"
             output_classes_content = []
 
-        line = line_original.lower()        
-
+        line = line_original.lower()  
+        
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
         font = fonts[random.randint(0, len(fonts) - 1)]
 
-        text_img, annotations = text_renderer.render_text(font, line, config['Common']['fontsize'])
+        text_img, annotations, baseline = text_renderer.render_text(font, line, config['Common']['fontsize'])
+        config['Baseline'] = {"text": baseline}
         
         set_paddings(text_img, config)
         text_img = image_helper.add_padding_to_img(text_img, 
@@ -153,6 +154,7 @@ def main():
         print("\rCompleted " + str(index + 1) + "/" + str(total) + ".", end="")
         sys.stdout.flush()
 
+    print()
     file_helper.write_file(output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
                
     return 0
