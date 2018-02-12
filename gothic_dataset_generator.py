@@ -6,6 +6,7 @@ import numpy as np
 import ConfigParser
 import random
 import math
+import signal
 
 from helpers import file_helper
 from helpers import image_helper
@@ -46,24 +47,28 @@ def parse_configuration_section(config, section):
             section_dict[option] = None
     return section_dict
 
+
 def parse_int(s, base=10, value=None):
     try:
         return int(s, base)
     except ValueError:
         return value
 
+
 def parse_float(s, value=None):
     if '.' in s:
         try:
-            return float(s)        
+            return float(s)
         except ValueError:
             pass
     return value
 
+
 def parse_arguments():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', help='Path to the configuration file.', required=True)
+    parser.add_argument(
+        '-c', '--config', help='Path to the configuration file.', required=True)
     args = parser.parse_args()
     return args
 
@@ -78,6 +83,7 @@ def build_dict(content):
 
     return words_dict
 
+
 def update_annotations(annotations, padding):
     new_annotations = []
     for annotation in annotations:
@@ -88,76 +94,117 @@ def update_annotations(annotations, padding):
 
 def set_paddings(img, config):
     height, width, _ = img.shape
+    baseline = 0
+
+    try:
+        baseline = config["Baseline"]["text"]
+    except:
+        pass
 
     config['Padding'] = {
-        'top': int(math.floor((config['OutputSize']['height'] - height) / 2.)),
-        'bottom': int(math.ceil((config['OutputSize']['height'] - height) / 2.)),
+        'top': int(math.floor((config['OutputSize']['height'] - height) / 2.) + baseline),
+        'bottom': int(math.ceil((config['OutputSize']['height'] - height) / 2.) - baseline),
         'left': int(math.floor((config['OutputSize']['width'] - width) / 2.)),
         'right': int(math.ceil((config['OutputSize']['width'] - width) / 2.))
     }
-    
+
 
 def main():
+
     args = parse_arguments()
     config = parse_configuration(args.config)
 
     backgrounds = file_helper.load_all_images(config['Common']['backgrounds'])
     fonts = file_helper.load_all_fonts(config['Common']['fonts'])
-    
-    content = file_helper.read_file(config['Common']['input'], config['Common']['words'])
+
+    content = file_helper.read_file(
+        config['Common']['input'], config['Common']['words'])
     total = len(content)
     words_dict = build_dict(content)
 
     file_helper.create_directory_if_not_exists(config['Common']['outputs'])
-    file_helper.create_directory_if_not_exists(config['Common']['outputs'] + "train/")
-    file_helper.create_directory_if_not_exists(config['Common']['outputs'] + "test/")
+    file_helper.create_directory_if_not_exists(
+        config['Common']['outputs'] + "train/")
+    file_helper.create_directory_if_not_exists(
+        config['Common']['outputs'] + "test/")
 
     train_or_test = "train/"
 
     output_classes_content = []
-    
+
     for index, line_original in enumerate(content):
 
-        if train_or_test == "train/" and float(index)/float(total) > config['Common']['trainratio']:
-            file_helper.write_file(output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
+        if train_or_test == "train/" and float(index) / float(total) > config['Common']['trainratio']:
+            file_helper.write_file(
+                output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
             train_or_test = "test/"
             output_classes_content = []
 
-        line = line_original.lower()  
-        
-        background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
+        line = line_original.lower()
+
+        background = np.copy(
+            backgrounds[random.randint(0, len(backgrounds) - 1)])
         font = fonts[random.randint(0, len(fonts) - 1)]
 
-        text_img, annotations, baseline = text_renderer.render_text(font, line, config['Common']['fontsize'])
-        config['Baseline'] = {"text": baseline}
-        
+        config["SurroundingText"]["linespace"] = random.randint(
+            config["SurroundingText"]["minlinespace"], 
+            config["SurroundingText"]["maxlinespace"])
+
+        config["SurroundingText"]["wordspace"] = random.randint(
+            config["SurroundingText"]["minwordspace"], 
+            config["SurroundingText"]["maxwordspace"])
+
+        config["fontsize"] = None
+
+        try:
+            text_img, annotations, baseline = text_renderer.render_text(
+                font, line, config)
+            config['Baseline'] = {'text': baseline}
+        except:
+            print("There was an error during creating image number", index)
+            print("Text:", line)
+            print("Font:", font)
+
         set_paddings(text_img, config)
-        text_img = image_helper.add_padding_to_img(text_img, 
-                                                   padding_top=config['Padding']['top'],
-                                                   padding_bottom=config['Padding']['bottom'],
-                                                   padding_left=config['Padding']['left'],
-                                                   padding_right=config['Padding']['right'])
+        text_img = image_helper.add_padding_to_img(
+            text_img,
+            padding_top=config['Padding']['top'],
+            padding_bottom=config['Padding']['bottom'],
+            padding_left=config['Padding']['left'],
+            padding_right=config['Padding']['right'])
 
-        annotations = update_annotations(annotations, config['Padding']['left'])
-        
-        result = effects_helper.apply_effects(text_img, line, words_dict, font, background, config)
+        annotations = update_annotations(
+            annotations, config['Padding']['left'])
 
-        file_helper.write_image(result, config['Common']['outputs'] + train_or_test + "image_" + str(index) + ".png")
-        file_helper.write_annotation_file(annotations, config['Common']['outputs'] + train_or_test + "image_" + str(index) + ".txt")
+        try:
+            result = effects_helper.apply_effects(
+                text_img, line, words_dict, font, background, config)
+        except:
+            print("There was an error during applying effects on image number", index)
+            print("Text:", line)
+            print("Font:", font)
 
-        output_classes_content.append("image_" + str(index) + ".png" + "\t" + line)
+        file_helper.write_image(
+            result, config['Common']['outputs'] + train_or_test + "image_" + str(index) + ".png")
+        file_helper.write_annotation_file(
+            annotations, config['Common']['outputs'] + train_or_test + "image_" + str(index) + ".txt")
+
+        output_classes_content.append(
+            "image_" + str(index) + ".png" + "\t" + line)
 
         if config['Common']['annotations']:
             result = image_helper.draw_annotations(result, annotations)
-            file_helper.write_image(result, config['Common']['outputs'] + train_or_test + "image_" + str(index) + "_annotations.png")
+            file_helper.write_image(
+                result, config['Common']['outputs'] + train_or_test + "image_" + str(index) + "_annotations.png")
 
-        print("\rCompleted " + str(index + 1) + "/" + str(total) + ".", end="")
+        print("Completed " + str(index + 1) + "/" + str(total) + ".")
         sys.stdout.flush()
 
-    print()
-    file_helper.write_file(output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
-               
+    file_helper.write_file(
+        output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
+
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
