@@ -15,16 +15,18 @@ def build_dict(directory):
     content_test = read_file(directory + "test/output.txt")
 
     for line in content_train:
-        _, output_class = line.split("\t")
-        if output_class not in word_dict.keys():
-            word_dict[output_class] = counter
-            counter += 1
+        if len(line) > 0:
+            _, output_class = line.split("\t")
+            if output_class not in word_dict.keys():
+                word_dict[output_class] = counter
+                counter += 1
 
     for line in content_test:
-        _, output_class = line.split("\t")
-        if output_class not in word_dict.keys():
-            word_dict[output_class] = counter
-            counter += 1
+        if len(line) > 0:
+            _, output_class = line.split("\t")
+            if output_class not in word_dict.keys():
+                word_dict[output_class] = counter
+                counter += 1
 
     return word_dict
 
@@ -55,14 +57,15 @@ def read_subdir(subdir, word_dict):
     classes = []
 
     for line in content:
-        file_name, output_class = line.split("\t")
-        images.append(read_image(subdir + file_name))
-        classes.append(word_dict[output_class])
+        if len(line) > 0:
+            file_name, output_class = line.split("\t")
+            images.append(read_image(subdir + file_name))
+            classes.append(word_dict[output_class])
 
     return images, classes
 
 
-def resize_images(image_list, target_size=(192,128)):
+def resize_images(image_list, target_size=(256,128)):
     new_list = []
     for img in image_list:
         new_list.append(cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC))
@@ -71,7 +74,7 @@ def resize_images(image_list, target_size=(192,128)):
 
 
 
-def read(directory="../Outputs/", target_size=(192,128)):
+def read(directory="../Outputs/", target_size=(256,128)):
     word_dict = build_dict(directory)
     train_images, train_labels = read_subdir(directory + "train/", word_dict)
     test_images, test_labels = read_subdir(directory + "test/", word_dict)

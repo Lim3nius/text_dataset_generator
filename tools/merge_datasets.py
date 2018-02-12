@@ -35,7 +35,7 @@ def update_output(dir1, dir2, offset):
 
     with open(dir2 + "/output.txt", "a") as f_append:
         for line in content:
-            f_append.write(line + "\n")
+            f_append.write(line)
 
 
 def merge(dir1, dir2, offset):
@@ -51,11 +51,12 @@ def merge(dir1, dir2, offset):
 
 
 def main():
-    src_directory = "Outputs_2"
-    dst_directory = "Outputs"
+    src_directory = "Outputs200_5"
+    dst_directory = "Outputs_500"
 
     last_index = get_last_file_index(dst_directory + "/train/")
     merge(src_directory + "/train/", dst_directory + "/train/", last_index)
+    #merge(src_directory + "/test/", dst_directory + "/test/", last_index)
     return 0
 
 
