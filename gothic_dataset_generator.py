@@ -8,6 +8,8 @@ import random
 import math
 import signal
 
+from freetype import *
+
 from helpers import file_helper
 from helpers import image_helper
 from helpers import effects_helper
@@ -94,16 +96,9 @@ def update_annotations(annotations, padding):
 
 def set_paddings(img, config):
     height, width, _ = img.shape
-    baseline = 0
-
-    try:
-        baseline = config["Baseline"]["text"]
-    except:
-        pass
-
     config['Padding'] = {
-        'top': int(math.floor((config['OutputSize']['height'] - height) / 2.) + baseline),
-        'bottom': int(math.ceil((config['OutputSize']['height'] - height) / 2.) - baseline),
+        'top': int(math.floor((config['OutputSize']['height'] - height) / 2.)),
+        'bottom': int(math.ceil((config['OutputSize']['height'] - height) / 2.)),
         'left': int(math.floor((config['OutputSize']['width'] - width) / 2.)),
         'right': int(math.ceil((config['OutputSize']['width'] - width) / 2.))
     }
@@ -127,6 +122,8 @@ def main():
         config['Common']['outputs'] + "train/")
     file_helper.create_directory_if_not_exists(
         config['Common']['outputs'] + "test/")
+
+    config["FontSizes"] = {}
 
     train_or_test = "train/"
 
@@ -160,10 +157,11 @@ def main():
             text_img, annotations, baseline = text_renderer.render_text(
                 font, line, config)
             config['Baseline'] = {'text': baseline}
-        except:
+        except Exception:
             print("There was an error during creating image number", index)
             print("Text:", line)
             print("Font:", font)
+            continue
 
         set_paddings(text_img, config)
         text_img = image_helper.add_padding_to_img(
@@ -179,10 +177,11 @@ def main():
         try:
             result = effects_helper.apply_effects(
                 text_img, line, words_dict, font, background, config)
-        except:
+        except Exception:
             print("There was an error during applying effects on image number", index)
             print("Text:", line)
             print("Font:", font)
+            continue
 
         file_helper.write_image(
             result, config['Common']['outputs'] + train_or_test + "image_" + str(index) + ".png")
