@@ -7,16 +7,14 @@ from helpers import text_renderer
 
 
 def apply_effect(img, text, word_dict, font, config):
-    img_height, img_width, _ = img.shape
-
     surrounding_text_left_right = helper.generate_text_line(text, word_dict, font, config)
     surrounding_text_img_left_right, _, baseline = text_renderer.render_text(font, surrounding_text_left_right, config)
     config["Baseline"]["surrounding"] = baseline
 
     surrounding_text_top_bottom = []
 
-    number_of_lines = 4
-    for line in range(number_of_lines):
+    number_of_lines = 2
+    for _ in range(number_of_lines):
         current_line = helper.generate_text_line(text, word_dict, font, config)
         surrounding_text_top_bottom.append(current_line)
 
