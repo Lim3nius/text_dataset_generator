@@ -104,5 +104,8 @@ ENV/
 *.pyproj
 /.vs
 *.png
-/outputs
+/outputs*
 /gothic_dataset_generator.zip
+/.vscode
+*.zip
+English_5_500.txt
