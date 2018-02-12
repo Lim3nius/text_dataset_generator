@@ -63,7 +63,6 @@ def render_text(font, text, config):
     except KeyError:
         font_size = calculate_font_size(font, config)
         config["FontSizes"][font] = font_size
-        print("CALCULATION")
     
     face = Face(font)
     face.set_char_size(font_size)
