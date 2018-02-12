@@ -10,8 +10,7 @@ def apply_effect(img, config):
     sigma_x = random.uniform(config['Blurring']['minsigmax'], config['Blurring']['maxsigmax'])
     img_blurred = cv2.GaussianBlur(img, (0,0), sigmaX=sigma_x)
     blur_map = 1 - helper.generate_map(width, height, coef, config['Blurring']['maxcolor']) / 255.
-   
-
+    
     for channel in range(channels):
         img[:, :, channel] = blur_map[:, :] * img[:, :, channel] + (1 - blur_map[:, :]) * img_blurred[:, :, channel]
 

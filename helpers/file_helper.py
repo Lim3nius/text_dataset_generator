@@ -69,5 +69,5 @@ def load_all_images(dir_name):
 def load_all_fonts(dir_name):
     fonts = [os.path.join(dir_name, f) for f in os.listdir(dir_name) 
              if os.path.isfile(os.path.join(dir_name, f)) and 
-             f.endswith(".otf") or f.endswith(".ttf")]
+             f.lower().endswith(".otf") or f.lower().endswith(".ttf")]
     return fonts

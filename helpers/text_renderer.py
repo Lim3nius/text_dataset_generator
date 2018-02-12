@@ -1,6 +1,7 @@
 from __future__ import print_function
 from freetype import *
 import numpy as np
+import cv2
 
 
 def _calculate_bounding_box(face, text):
@@ -55,11 +56,14 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
     return characters_position
 
 
-def render_text(font, text, font_size=32):
-    font_size_coeficient = 64
+def render_text(font, text, config):
+    if config["fontsize"] is None:
+        config["fontsize"] = calculate_font_size(font, config)
+
+    font_size = config["fontsize"]
     
     face = Face(font)
-    face.set_char_size(font_size * font_size_coeficient)
+    face.set_char_size(font_size)
 
     width, height, baseline = _calculate_bounding_box(face, text);
 
@@ -67,11 +71,39 @@ def render_text(font, text, font_size=32):
 
     positions = _render_text_to_bitmap(face, text, width, height, baseline, img)
 
-    img = _remove_trailing_space(img)
-
     annotations = zip(text, positions)
-    
+
+    img = _remove_trailing_space(img)
+        
     return _grayscale_to_rgba(img), annotations, baseline
+
+
+def calculate_font_size(font, config):
+    font_size = 320
+    text = "abcdefghijklmnopqrstuvwxyz"
+    height_epsilon = 2
+
+    face = Face(font)
+    face.set_char_size(font_size)
+
+    _, height, _= _calculate_bounding_box(face, text);
+    height /= 2
+
+    target_height = config["OutputSize"]["lineheight"]
+    lower_bound = target_height - height_epsilon
+    upper_bound = target_height + height_epsilon
+
+    while not (lower_bound <= height <= upper_bound):
+        if height < target_height:
+            font_size += 1
+        else:
+            font_size -= 1
+        
+        face.set_char_size(font_size)
+        _, height, _= _calculate_bounding_box(face, text);
+        height /= 2
+
+    return font_size
 
 
 def _grayscale_to_rgba(img):

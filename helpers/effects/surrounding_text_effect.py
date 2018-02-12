@@ -10,7 +10,7 @@ def apply_effect(img, text, word_dict, font, config):
     img_height, img_width, _ = img.shape
 
     surrounding_text_left_right = helper.generate_text_line(text, word_dict, font, config)
-    surrounding_text_img_left_right, _, baseline = text_renderer.render_text(font, surrounding_text_left_right, config['Common']['fontsize'])
+    surrounding_text_img_left_right, _, baseline = text_renderer.render_text(font, surrounding_text_left_right, config)
     config["Baseline"]["surrounding"] = baseline
 
     surrounding_text_top_bottom = []

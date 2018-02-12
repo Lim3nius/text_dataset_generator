@@ -16,7 +16,7 @@ def generate_text_line(current_word, word_dict, font, config, output_size_coef=2
         if new_word != current_word:
             text += new_word + " "
 
-    line_img, _, _ = text_renderer.render_text(font, text, config['Common']['fontsize'])
+    line_img, _, _ = text_renderer.render_text(font, text, config)
 
     while line_img.shape[1] < target_width:
         for i in range(number_of_added_words):
@@ -24,7 +24,7 @@ def generate_text_line(current_word, word_dict, font, config, output_size_coef=2
             if new_word != current_word:
                 text += new_word + " "
 
-        line_img, _, _ = text_renderer.render_text(font, text, config['Common']['fontsize'])
+        line_img, _, _ = text_renderer.render_text(font, text, config)
 
     return text
 
@@ -33,7 +33,7 @@ def generate_text_image(text, font, config):
     min_width = None
     lines = []
     for line in text:
-        line_img, _, _ = text_renderer.render_text(font, line, config['Common']['fontsize'])
+        line_img, _, _ = text_renderer.render_text(font, line, config)
         lines.append(line_img)
 
         line_width = line_img.shape[1]
@@ -70,7 +70,7 @@ def set_surroundings(img, img_top_bottom, img_left_right, config):
 
     if bottom_offset > 0:
         img[-bottom_offset:, :min(img_width, bottom_text_img.shape[1])] = bottom_text_img
-
+        
     img_bottom_offset = config["Padding"]["bottom"] + (config["Baseline"]["text"] - config["Baseline"]["surrounding"])
 
     if left_offset > 0:
