@@ -57,10 +57,13 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
 
 
 def render_text(font, text, config):
-    if config["fontsize"] is None:
-        config["fontsize"] = calculate_font_size(font, config)
-
-    font_size = config["fontsize"]
+    font_size = 0
+    try:
+        font_size = config["FontSizes"][font]
+    except KeyError:
+        font_size = calculate_font_size(font, config)
+        config["FontSizes"][font] = font_size
+        print("CALCULATION")
     
     face = Face(font)
     face.set_char_size(font_size)
