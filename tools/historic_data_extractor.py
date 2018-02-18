@@ -77,7 +77,7 @@ def extract_data(directory, output_directory="Images/", target_height=128, targe
 def main():
     src_directory = "HistoricData/"
     create_directory_if_not_exists(src_directory + "Images/")
-    extract_data(src_directory, target_height=96, target_width=256)
+    extract_data(src_directory, target_height=64, target_width=128)
     return 0
 
 
