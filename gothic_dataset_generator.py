@@ -105,7 +105,6 @@ def set_paddings(img, config):
 
 
 def main():
-
     args = parse_arguments()
     config = parse_configuration(args.config)
 
@@ -130,7 +129,6 @@ def main():
     output_classes_content = []
 
     for index, line_original in enumerate(content):
-
         if train_or_test == "train/" and float(index) / float(total) > config['Common']['trainratio']:
             file_helper.write_file(
                 output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
@@ -151,13 +149,12 @@ def main():
             config["SurroundingText"]["minwordspace"], 
             config["SurroundingText"]["maxwordspace"])
 
-        config["fontsize"] = None
-
         try:
             text_img, annotations, baseline = text_renderer.render_text(
                 font, line, config)
             config['Baseline'] = {'text': baseline}
-        except Exception:
+        except Exception as ex:
+            print(ex)
             print("There was an error during creating image number", index)
             print("Text:", line)
             print("Font:", font)
