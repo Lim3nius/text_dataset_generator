@@ -65,22 +65,27 @@ def read_subdir(subdir, word_dict):
     return images, classes
 
 
-def resize_images(image_list, target_size=(256,128)):
-    new_list = []
-    for img in image_list:
-        new_list.append(cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC))
+def read_subdir_positions(subdir):
+    content = read_file(subdir + "output.txt")
 
-    return new_list
+    images = []
+    characters = []
+    positions = []
+
+    for line in content:
+        if len(line) > 0:
+            file_name, character, current_position, next_position = line.split("\t")
+            images.append(read_image(subdir + file_name))
+            characters.append(character)
+            positions.append(int(next_position) - int(current_position))
+
+    return images, characters, positions
 
 
-
-def read(directory="../Outputs/", target_size=(256,128)):
+def read_word_classification(directory="../Outputs/"):
     word_dict = build_dict(directory)
     train_images, train_labels = read_subdir(directory + "train/", word_dict)
     test_images, test_labels = read_subdir(directory + "test/", word_dict)
-
-    train_images = resize_images(train_images, target_size)
-    test_images = resize_images(test_images, target_size)
 
     train_images = np.asarray(train_images)
     train_labels = np.asarray(train_labels)
@@ -90,13 +95,29 @@ def read(directory="../Outputs/", target_size=(256,128)):
     return train_images, train_labels, test_images, test_labels
 
 
+def read_character_position(directory="../OutputsPositions/"):
+    train_images, train_chars, train_deltas = read_subdir_positions(directory + "train/")
+    test_images, test_chars, test_deltas = read_subdir_positions(directory + "test/")
+
+    train_images = np.asarray(train_images)
+    train_chars = np.asarray(train_chars)
+    train_deltas = np.asarray(train_deltas)
+    test_images = np.asarray(test_images)
+    test_chars = np.asarray(test_chars)
+    test_deltas = np.asarray(test_deltas)
+
+    return train_images, train_chars, train_deltas, test_images, test_chars, test_deltas
+
+
 def main():
-    train_images, train_labels, test_images, test_labels = read()
+    train_images, train_chars, train_deltas, test_images, test_chars, test_deltas = read_character_position()
 
     print("Train images: ", train_images.shape)
-    print("Train labels: ", train_labels.shape)
+    print("Train chars: ", train_chars.shape)
+    print("Train deltas: ", train_deltas.shape)
     print("Test images: ", test_images.shape)
-    print("Test labels: ", test_labels.shape)
+    print("Test chars: ", test_chars.shape)
+    print("Test deltas: ", test_deltas.shape)
 
     return 0
 
