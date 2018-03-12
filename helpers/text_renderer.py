@@ -2,33 +2,60 @@ from __future__ import print_function
 from freetype import *
 import numpy as np
 import cv2
+import math
 
 
-def _calculate_bounding_box(face, text):
+def _calculate_bounding_box(face, text, config):
     slot = face.glyph
     width, height, baseline = 0, 0, 0
     previous = 0
+    
     for i, c in enumerate(text):
+        angle = 0
+        delta = 0
+        try:
+            angle = config["CurrentTransormations"]["rotations"][i]
+            delta = config["CurrentTransormations"]["translations"][i]
+        except:
+            pass
+
+        matrix = Matrix(int(math.cos(angle) * 0x10000), int(-math.sin(angle) * 0x10000),
+                        int(math.sin(angle) * 0x10000), int( math.cos(angle) * 0x10000))
+        
+        face.set_transform(matrix, Vector(0, 0))
         face.load_char(c)
         bitmap = slot.bitmap
         height = max(height,
                      bitmap.rows + max(0,-(slot.bitmap_top-bitmap.rows)))
         baseline = max(baseline, max(0,-(slot.bitmap_top-bitmap.rows)))
         kerning = face.get_kerning(previous, c)
-        width += (slot.advance.x >> 6) + (kerning.x >> 6)
+        width += (slot.advance.x >> 6) + (kerning.x >> 6) + delta
         previous = c
 
     return width * 2, height * 2, baseline
 
 
-def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
+def _render_text_to_bitmap(face, text, width, height, baseline, image_array, config):
     previous_was_space = False
     previous_slot_advance_x = 0
     characters_position = []
     slot = face.glyph
     x, y = 0, 0
     previous = 0
-    for c in text:
+
+    for i, c in enumerate(text):
+        angle = 0
+        delta = 0
+        try:
+            angle = config["CurrentTransormations"]["rotations"][i]
+            delta = config["CurrentTransormations"]["translations"][i]
+        except:
+            pass
+        
+        matrix = Matrix(int(math.cos(angle) * 0x10000), int(-math.sin(angle) * 0x10000),
+                        int(math.sin(angle) * 0x10000), int( math.cos(angle) * 0x10000))        
+        
+        face.set_transform(matrix, Vector(0, 0))
         face.load_char(c)
 
         if previous_was_space:
@@ -50,10 +77,41 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array):
         
         image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h, w)
         characters_position.append(x + w / 2)
-        x += (slot.advance.x >> 6)
+        x += (slot.advance.x >> 6) + delta
         previous = c
 
     return characters_position
+
+
+def _generate_transformations(text, config):
+    result = {}
+
+    result["rotations"] = _generate_rotations(text, config)
+    result["translations"] = _generate_translations(text, config)
+
+    return result
+
+
+def _generate_rotations(text, config):
+    rotations = []
+    mean = config["Transformations"]["rotationmean"]
+    sigma = config["Transformations"]["rotationsigma"]
+
+    for _ in text:
+        rotations.append(np.random.normal(mean, sigma))
+
+    return rotations
+
+
+def _generate_translations(text, config):
+    translations = []
+    mean = config["Transformations"]["translationmean"]
+    sigma = config["Transformations"]["translationsignma"]
+
+    for _ in text:
+        translations.append(int(np.random.normal(mean, sigma)))
+
+    return translations
 
 
 def render_text(font, text, config):
@@ -64,14 +122,16 @@ def render_text(font, text, config):
         font_size = calculate_font_size(font, config)
         config["FontSizes"][font] = font_size
     
+    config["CurrentTransormations"] = _generate_transformations(text, config)
+
     face = Face(font)
     face.set_char_size(font_size)
 
-    width, height, baseline = _calculate_bounding_box(face, text);
+    width, height, baseline = _calculate_bounding_box(face, text, config);
 
     img = np.zeros((height,width), dtype=np.ubyte)
 
-    positions = _render_text_to_bitmap(face, text, width, height, baseline, img)
+    positions = _render_text_to_bitmap(face, text, width, height, baseline, img, config)
 
     annotations = zip(text, positions)
 
@@ -88,7 +148,7 @@ def calculate_font_size(font, config):
     face = Face(font)
     face.set_char_size(font_size)
 
-    _, height, _= _calculate_bounding_box(face, text);
+    _, height, _= _calculate_bounding_box(face, text, config);
     height /= 2
 
     target_height = config["OutputSize"]["lineheight"]
@@ -102,7 +162,7 @@ def calculate_font_size(font, config):
             font_size -= 1
         
         face.set_char_size(font_size)
-        _, height, _= _calculate_bounding_box(face, text);
+        _, height, _= _calculate_bounding_box(face, text, config);
         height /= 2
 
     return font_size
