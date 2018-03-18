@@ -7,6 +7,7 @@ import ConfigParser
 import random
 import math
 import signal
+import traceback
 
 from freetype import *
 
@@ -97,11 +98,17 @@ def update_annotations(annotations, padding):
 def set_paddings(img, config):
     height, width, _ = img.shape
     config['Padding'] = {
-        'top': int(math.floor((config['OutputSize']['height'] - height) / 2.)),
-        'bottom': int(math.ceil((config['OutputSize']['height'] - height) / 2.)),
-        'left': int(math.floor((config['OutputSize']['width'] - width) / 2.)),
-        'right': int(math.ceil((config['OutputSize']['width'] - width) / 2.))
+        'top': config['OutputSize']['padding'],
+        'bottom': config['OutputSize']['padding'],
+        'left': config['OutputSize']['padding'],
+        'right': config['OutputSize']['padding'],
     }
+
+
+def set_width_and_height(img, config):
+    height, width, _ = img.shape
+    config['OutputSize']['width'] = width
+    config['OutputSize']['height'] = height
 
 
 def main():
@@ -168,13 +175,16 @@ def main():
             padding_left=config['Padding']['left'],
             padding_right=config['Padding']['right'])
 
+        set_width_and_height(text_img, config)
         annotations = update_annotations(
             annotations, config['Padding']['left'])
 
         try:
             result = effects_helper.apply_effects(
                 text_img, line, words_dict, font, background, config)
-        except Exception:
+        except Exception as ex:
+            print(ex)
+            traceback.print_exc()
             print("There was an error during applying effects on image number", index)
             print("Text:", line)
             print("Font:", font)
