@@ -109,3 +109,6 @@ ENV/
 /.vscode
 *.zip
 English_5_500.txt
+
+*.h5
+test.py
