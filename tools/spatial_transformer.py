@@ -1,6 +1,8 @@
 from keras.layers.core import Layer
 import tensorflow as tf
 
+from keras.models import Sequential, Model
+
 class SpatialTransformer(Layer):
     """Spatial Transformer Layer
     Implements a spatial transformer layer as described in [1]_.
@@ -26,7 +28,16 @@ class SpatialTransformer(Layer):
                  localization_net,
                  output_size,
                  **kwargs):
-        self.locnet = localization_net
+        
+        if type(localization_net) is list:
+            self.locnet = Sequential.from_config(localization_net)
+
+        elif type(localization_net) is dict:
+            self.locnet = Model.from_config(localization_net)
+
+        else:
+            self.locnet = localization_net
+
         self.output_size = output_size
         super(SpatialTransformer, self).__init__(**kwargs)
 
@@ -187,3 +198,8 @@ class SpatialTransformer(Layer):
                                                                 num_channels))
         return transformed_image
 
+    def get_config(self):
+        config = {'localization_net': self.locnet.get_config(),
+                  'output_size': self.output_size}
+        base_config = super(SpatialTransformer, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
