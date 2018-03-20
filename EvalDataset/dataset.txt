@@ -1,1 +1,5 @@
 image_0.png	etiam	27
+image_1.png	with	45
+image_2.png	and	43
+image_3.png	be	58
+image_4.png	you	48
