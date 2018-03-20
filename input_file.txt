@@ -1,14 +1,14 @@
 Lorem ipsum dolor sit amet
-Consectetur adipiscing elit
-Etiam lobortis ex ut sem
-Finibus, vel vulputate diam
+Consectetur, adipiscing elit
+Etiam lobortis ex ut sem.
+Finibus, vel vulputate diam.
 Vestibulum porta ligula at
 Vivamus tincidunt nisl sed
-Suspendisse ultricies diam
-Ut sit amet elit in lorem
+Suspendisse ultricies diam.
+Ut sit, amet elit in lorem
 Quisque hendrerit diam eu
 Aliquam non ante eu neque
-Sed quis ex sit amet arcu
-Donec dignissim felis quis
+Sed quis ex sit amet arcu.
+Donec dignissim, felis quis
 Vestibulum fringilla eros
-Phasellus vehicula purus
+Phasellus vehicula purus.
