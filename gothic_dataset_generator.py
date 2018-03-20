@@ -142,7 +142,10 @@ def main():
             train_or_test = "test/"
             output_classes_content = []
 
-        line = line_original.lower()
+        if config["Common"]["tolowercase"]:
+            line = line_original.lower()
+        else:
+            line = line_original
 
         background = np.copy(
             backgrounds[random.randint(0, len(backgrounds) - 1)])
