@@ -9,76 +9,94 @@ def _calculate_bounding_box(face, text, config):
     slot = face.glyph
     width, height, baseline = 0, 0, 0
     previous = 0
+    space_counter = 0
     
     for i, c in enumerate(text):
-        angle = 0
-        delta = 0
-        try:
-            angle = config["CurrentTransormations"]["rotations"][i]
-            delta = config["CurrentTransormations"]["translations"][i]
-        except:
-            pass
+        if c == " ":
+            space_width = 5
 
-        matrix = Matrix(int(math.cos(angle) * 0x10000), int(-math.sin(angle) * 0x10000),
-                        int(math.sin(angle) * 0x10000), int( math.cos(angle) * 0x10000))
-        
-        face.set_transform(matrix, Vector(0, 0))
-        face.load_char(c)
-        bitmap = slot.bitmap
-        height = max(height,
-                     bitmap.rows + max(0,-(slot.bitmap_top-bitmap.rows)))
-        baseline = max(baseline, max(0,-(slot.bitmap_top-bitmap.rows)))
-        kerning = face.get_kerning(previous, c)
-        width += (slot.advance.x >> 6) + (kerning.x >> 6) + delta
-        previous = c
+            try:
+                space_width = config["CurrentTransormations"]["spaces"][space_counter]
+            except:
+                pass
+
+            width += space_width
+            space_counter += 1
+            previous = 0
+
+        else : 
+            angle = 0
+            delta = 0
+            try:
+                angle = config["CurrentTransormations"]["rotations"][i]
+                delta = config["CurrentTransormations"]["translations"][i]
+            except:
+                pass
+
+            matrix = Matrix(int(math.cos(angle) * 0x10000), int(-math.sin(angle) * 0x10000),
+                            int(math.sin(angle) * 0x10000), int( math.cos(angle) * 0x10000))
+            
+            face.set_transform(matrix, Vector(0, 0))
+            face.load_char(c)
+            bitmap = slot.bitmap
+            height = max(height,
+                        bitmap.rows + max(0,-(slot.bitmap_top-bitmap.rows)))
+            baseline = max(baseline, max(0,-(slot.bitmap_top-bitmap.rows)))
+            kerning = face.get_kerning(previous, c)
+            width += (slot.advance.x >> 6) + (kerning.x >> 6) + delta
+            previous = c
 
     return width * 2, height * 2, baseline
 
 
 def _render_text_to_bitmap(face, text, width, height, baseline, image_array, config):
-    previous_was_space = False
-    previous_slot_advance_x = 0
     characters_position = []
     slot = face.glyph
     x, y = 0, 0
     previous = 0
+    space_counter = 0
 
     for i, c in enumerate(text):
-        angle = 0
-        delta = 0
-        try:
-            angle = config["CurrentTransormations"]["rotations"][i]
-            delta = config["CurrentTransormations"]["translations"][i]
-        except:
-            pass
-        
-        matrix = Matrix(int(math.cos(angle) * 0x10000), int(-math.sin(angle) * 0x10000),
-                        int(math.sin(angle) * 0x10000), int( math.cos(angle) * 0x10000))        
-        
-        face.set_transform(matrix, Vector(0, 0))
-        face.load_char(c)
+        if c == " ":
+            space_width = 5
 
-        if previous_was_space:
-            characters_position[-1] += previous_slot_advance_x / 2
-            previous_was_space = False
+            try:
+                space_width = config["CurrentTransormations"]["spaces"][space_counter]
+            except:
+                pass
+            
+            characters_position.append(x + space_width / 2)
+            x += space_width
+            space_counter += 1
+            previous = 0
 
-        bitmap = slot.bitmap
-        top = slot.bitmap_top
-        left = slot.bitmap_left
-        w,h = bitmap.width, bitmap.rows
-        y = height-baseline-top
-        kerning = face.get_kerning(previous, c)
+        else:
+            angle = 0
+            delta = 0
+            try:
+                angle = config["CurrentTransormations"]["rotations"][i]
+                delta = config["CurrentTransormations"]["translations"][i]
+            except:
+                pass
+            
+            matrix = Matrix(int(math.cos(angle) * 0x10000), int(-math.sin(angle) * 0x10000),
+                            int(math.sin(angle) * 0x10000), int( math.cos(angle) * 0x10000))        
+            
+            face.set_transform(matrix, Vector(0, 0))
+            face.load_char(c)
+            bitmap = slot.bitmap
+            top = slot.bitmap_top
+            left = slot.bitmap_left
+            w,h = bitmap.width, bitmap.rows
+            y = height-baseline-top
+            kerning = face.get_kerning(previous, c)
 
-        if c == ' ':
-            previous_was_space = True
-            previous_slot_advance_x = (slot.advance.x >> 6)
-
-        x += (kerning.x >> 6)
-        
-        image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h, w)
-        characters_position.append(x + w / 2)
-        x += (slot.advance.x >> 6) + delta
-        previous = c
+            x += (kerning.x >> 6)
+            
+            image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h, w)
+            characters_position.append(x + w / 2)
+            x += (slot.advance.x >> 6) + delta
+            previous = c
 
     return characters_position
 
@@ -88,6 +106,7 @@ def _generate_transformations(text, config):
 
     result["rotations"] = _generate_rotations(text, config)
     result["translations"] = _generate_translations(text, config)
+    result["spaces"] = _generate_spaces(text, config)
 
     return result
 
@@ -108,10 +127,21 @@ def _generate_translations(text, config):
     mean = config["Transformations"]["translationmean"]
     sigma = config["Transformations"]["translationsignma"]
 
-    for _ in text:
-        translations.append(int(np.random.normal(mean, sigma)))
+    for i, c in enumerate(text):
+        if i < len(text) - 1:
+            if text[i + 1] == " ":
+                translations.append(0)
+            else:
+                translations.append(int(np.random.normal(mean, sigma)))
 
     return translations
+
+
+def _generate_spaces(text, config):
+    min_space = config["SurroundingText"]["minwordspace"]
+    max_space = config["SurroundingText"]["maxwordspace"]
+
+    return np.random.randint(min_space, max_space, text.count(" ")).tolist()
 
 
 def render_text(font, text, config):
