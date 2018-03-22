@@ -111,6 +111,38 @@ def set_width_and_height(img, config):
     config['OutputSize']['height'] = height
 
 
+def modify_line(line, config):
+    output = line
+    if config["Text"]["tolowercase"]:
+        output = output.lower()
+    
+    if config["Text"]["firstuppercase"] > 0.0:
+        prob = config["Text"]["firstuppercase"]
+        words = output.split()
+        output = ""
+        for word in words:
+            if np.random.random() < prob:
+                output += word.title()
+            else:
+                output += word
+
+            output += " "
+
+    if config["Text"]["punctuationafterword"]:
+        prob = config["Text"]["punctuationafterword"]
+        words = output.split()
+        output = ""
+        punctuations = config["Text"]["punctuations"]
+        for word in words:
+            output += word
+            
+            if np.random.random() < prob:
+                output += punctuations[np.random.randint(len(punctuations))]
+            
+            output += " "
+
+    return output.rstrip()
+
 def main():
     args = parse_arguments()
     config = parse_configuration(args.config)
@@ -119,7 +151,7 @@ def main():
     fonts = file_helper.load_all_fonts(config['Common']['fonts'])
 
     content = file_helper.read_file(
-        config['Common']['input'], config['Common']['words'])
+        config['Common']['input'], config['Text']['words'])
     total = len(content)
     words_dict = build_dict(content)
 
@@ -142,10 +174,7 @@ def main():
             train_or_test = "test/"
             output_classes_content = []
 
-        if config["Common"]["tolowercase"]:
-            line = line_original.lower()
-        else:
-            line = line_original
+        line = modify_line(line_original, config)
 
         background = np.copy(
             backgrounds[random.randint(0, len(backgrounds) - 1)])
