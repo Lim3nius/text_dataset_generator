@@ -2,8 +2,9 @@ import random
 import numpy as np
 import cv2
 import sys
+import time
 
-from opensimplex import OpenSimplex
+from noise import snoise3
 
 from helpers import text_renderer
 
@@ -82,34 +83,30 @@ def set_surroundings(img, img_top_bottom, img_left_right, config):
     return np.copy(img)
 
 
-def generate_map_config(config):
-    width = config['OutputSize']['width']
-    height = config['OutputSize']['height']
-    coef = random.uniform(config['PrintingImperfections']['mincoef'], config['PrintingImperfections']['maxcoef'])
+def generate_map_config(width, height, config):
+    freq = random.uniform(config['PrintingImperfections']['minfreq'], config['PrintingImperfections']['maxfreq'])
     max_color = config['PrintingImperfections']['maxcolor']
     subtract_min = config['PrintingImperfections']['subtractmin']
 
-    return generate_map(width, height, coef, max_color, subtract_min)
+    return generate_map(width, height, freq, max_color, subtract_min)
 
 
-def generate_map(width, height, coef, max_color, subtract_min=True):
-    simplex = OpenSimplex(seed=random.randint(0, sys.maxsize))
+def generate_map(width, height, freq, max_color, subtract_min=True):
+    seed = random.random()
+    octaves = 3
     img = np.zeros((height, width))
-
+    
     for y in range(height):
         for x in range(width):
-            img[y, x] = int((simplex.noise2d(x * coef, y * coef) + 1) / 2.0 * max_color)
-               
+            img[y, x] = int(((snoise3(x / freq, y / freq, seed, octaves=octaves) + 1) / 2.0) * max_color)
+        
     if subtract_min:
         img = img - np.amin(img)
-        
+
     return img
 
 
-def generate_map_blobs(config):    
-    width = config['OutputSize']['width']
-    height = config['OutputSize']['height']
-
+def generate_map_blobs(width, height, config):
     img = np.zeros((height, width))
 
     number_of_blobs = random.randint(0, config['PrintingImperfections']['maxblobs'])

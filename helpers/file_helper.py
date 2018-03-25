@@ -19,10 +19,13 @@ def read_file(file_name, words=False):
     return content
 
 
-def write_annotation_file(annotations, file_name):
+def write_annotation_file(annotations, baselines, file_name):
     with open(file_name, "w") as f_write:
         for annotation in annotations:
             f_write.write(str(annotation) + "\r\n")
+
+        for baseline in baselines:
+            f_write.write(str(baseline) + "\r\n")
 
 def write_file(content, file_name):
     with open(file_name, "w") as f_write:

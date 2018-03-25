@@ -38,12 +38,22 @@ def get_random_part_of_texture(width, height, texture):
     return result
     
 
-def draw_annotations(img, annotations, color=[255,0,0]):
+def draw_annotations(img, annotations, baselines, a_color=[255,0,0], b_color=[0,255,0]):
     result = np.copy(img)
     
-    for annotation in annotations:
-        position = annotation[1]
-        result[:, position] = color
+    for annotation in annotations:    
+        x, y, w, h = annotation[1]
+        result[y:y+h, x] = a_color # left edge
+        result[y:y+h, x+w] = a_color # right edge
+        result[y, x:x+w] = a_color # top edge
+        result[y+h, x:x+w] = a_color # bottom edge
+
+    for baseline in baselines:
+        x, y, w = baseline
+        if y < img.shape[0]:
+            result[y, x:x+w] = b_color
+        else:
+            result[-1, x:x+w] = b_color
 
     return result
 
