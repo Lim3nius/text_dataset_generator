@@ -6,8 +6,8 @@ How to run the script:
 Example:  
 ``python gothic_dataset_generator.py -c config.ini``
   
-![script output image with background](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image.png)``  
-![script output image with drawn position annotations](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image_annotated.png)``  
+![script output image with background](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image.png)
+![script output image with drawn position annotations](https://github.com/xkissm00/gothic_dataset_generator/blob/master/image_annotated.png)
 
 TODO: https://docs.google.com/document/d/14FALCZ9-EJo5KKMF_Ias3ti4t4-aogity3oZEz4783w/edit
 
