@@ -15,6 +15,7 @@ from helpers import file_helper
 from helpers import image_helper
 from helpers import effects_helper
 from helpers import text_renderer
+from helpers import xml_helper
 
 
 def parse_configuration(config_path):
@@ -205,15 +206,20 @@ def main():
             print("Font:", font)
             continue
 
-        file_helper.write_image(result, config['Common']['outputs'] + "image_" + str(index) + ".png")
-        file_helper.write_annotation_file(annotations, baselines, config['Common']['outputs'] + "image_" + str(index) + ".txt")
+        image_name = "image_" + str(index)
+
+        transkribus = xml_helper.annotations_and_baselines_to_transkribus_xml(annotations, baselines, image_name + ".png", result.shape[:2])
+        file_helper.write_file(transkribus, config['Common']['outputs'] + image_name + ".xml")
+
+        file_helper.write_image(result, config['Common']['outputs'] + image_name + ".png")
+        file_helper.write_annotation_file(annotations, baselines, config['Common']['outputs'] + image_name + ".txt")
 
         if config['Common']['annotations']:
             result = image_helper.draw_annotations(result, annotations, baselines)
-            file_helper.write_image(result, config['Common']['outputs'] + "image_" + str(index) + "_annotations.png")
+            file_helper.write_image(result, config['Common']['outputs'] + image_name + "_annotations.png")
 
         index += 1
-        print("Completed " + str(index) + ".")
+        print("Completed " + image_name + ".")
         sys.stdout.flush()
 
     # file_helper.write_file(output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")

@@ -29,8 +29,11 @@ def write_annotation_file(annotations, baselines, file_name):
 
 def write_file(content, file_name):
     with open(file_name, "w") as f_write:
-        for line in content:
-            f_write.write(str(line) + "\r\n")
+        if type(content) is list:
+            for line in content:
+                f_write.write(str(line) + "\r\n")
+        else:
+            f_write.write(str(content))
 
 
 def create_directory_if_not_exists(dir_name):
