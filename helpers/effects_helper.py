@@ -18,8 +18,8 @@ def apply_effects(img, text, words_dict, font, background, config):
     #     back_text = printing_imperfections_effect.apply_effect(back_text, config)
     #     alpha_coef = random.uniform(config['BackText']['minalpha'], config['BackText']['maxalpha'])
     #     background = image_helper.place_text_on_background(back_text, background, alpha_coef)
-
-    img = blurry_text_effect.apply_effect(img, config)
+    
     img = image_helper.place_text_on_background(img, background)
+    img = blurry_text_effect.apply_effect(img, config)
 
     return img
