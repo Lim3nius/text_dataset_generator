@@ -16,6 +16,7 @@ from helpers import image_helper
 from helpers import effects_helper
 from helpers import text_renderer
 from helpers import xml_helper
+from helpers import semantic_segmentation_helper
 
 
 def parse_configuration(config_path):
@@ -198,6 +199,8 @@ def main():
         annotations = update_annotations(annotations, config['Padding']['left'], config['Padding']['top'])
         baselines = update_baselines(baselines, config['Padding']['left'], config['Padding']['top'])
 
+        semantic_segmentation_image = semantic_segmentation_helper.generate(text_img, annotations)
+
         try:
             result = effects_helper.apply_effects(text_img, "", {}, font, background, config)
         except Exception as ex:
@@ -212,6 +215,7 @@ def main():
         file_helper.write_file(transkribus, config['Common']['outputs'] + image_name + ".xml")
 
         file_helper.write_image(result, config['Common']['outputs'] + image_name + ".png")
+        file_helper.write_image(semantic_segmentation_image, config['Common']['outputs'] + image_name + "_semantic.png")
         file_helper.write_annotation_file(annotations, baselines, config['Common']['outputs'] + image_name + ".txt")
 
         if config['Common']['annotations']:
