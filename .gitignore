@@ -104,6 +104,11 @@ ENV/
 *.pyproj
 /.vs
 *.png
+!image.png
+!image_annotated.png
+!image_semantic.png
+!image_semantic_colored.png
+
 /outputs*
 /gothic_dataset_generator.zip
 /.vscode
