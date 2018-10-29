@@ -1,4 +1,4 @@
-# Gothic dataset generator
+# Text dataset generator
 
 How to run the script:  
 ``gothic_dataset_generator.py [-h] -c CONFIG``  
