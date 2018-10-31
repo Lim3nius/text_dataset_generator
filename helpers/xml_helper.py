@@ -1,6 +1,33 @@
 from lxml import etree
 
 
+def mets_transkribus_xml(image_names, annotation_names):
+    root = etree.Element("mets")
+
+    fileSec = etree.SubElement(root, "fileSec")
+
+    fileGrp = etree.SubElement(fileSec, "fileGrp")
+    fileGrp.set("ID", "MASTER")
+
+    fileGrpImg = etree.SubElement(fileGrp, "fileGrp")
+    fileGrpImg.set("ID", "IMG")
+
+    for image_name in image_names:
+        file = etree.SubElement(fileGrpImg, "file")
+        fileFLocat = etree.SubElement(file, "FLocat")
+        fileFLocat.set("href", image_name)
+
+    fileGrpXml = etree.SubElement(fileGrp, "fileGrp")
+    fileGrpXml.set("ID", "PAGEXML")
+
+    for annotation_name in annotation_names:
+        file = etree.SubElement(fileGrpXml, "file")
+        fileFLocat = etree.SubElement(file, "FLocat")
+        fileFLocat.set("href", annotation_name)
+
+    return str(etree.tostring(root, pretty_print=True))
+
+
 def annotations_and_baselines_to_transkribus_xml(annotations, baselines, name, image_size):
     height, width = image_size
     root = etree.Element("PcGts")
@@ -28,6 +55,7 @@ def annotations_and_baselines_to_transkribus_xml(annotations, baselines, name, i
 
         line_text_equiv = etree.SubElement(text_line, "TextEquiv")
         line_unicode = etree.SubElement(line_text_equiv, "Unicode")
+
         line_unicode.text = _get_text(annotation)
         
     return str(etree.tostring(root, pretty_print=True))

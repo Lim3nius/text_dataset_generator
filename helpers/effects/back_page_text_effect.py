@@ -1,26 +1,26 @@
 
 import sys
+import copy
 import random
 import numpy as np
+import traceback
 
 import helper
 from helpers import image_helper
 from helpers import text_renderer
 
 
-def generate_back_image(width, height, text, word_dict, font, config):
-    back_text = []
+def generate_back_image(font, config):
+    complete_content = copy.deepcopy(config["OriginalText"][0])
+    selected_content = complete_content[np.random.randint(len(complete_content)):]
 
-    number_of_lines = 7
+    back_text_img = None
 
-    for line in range(number_of_lines):
-        current_line = helper.generate_text_line(text, word_dict, font, config)
-        back_text.append(current_line)
-
-    back_text_img = helper.generate_text_image(back_text, font, config)
-            
-    back_text_img = back_text_img[:, ::-1]
-    back_text_img = image_helper.get_random_part_of_texture(width, height, back_text_img)
+    try:
+        back_text_img, _, _, _ = text_renderer.render_page(font, [selected_content], config)
+        back_text_img = np.flip(back_text_img, axis=1)
+    except:
+        traceback.print_exc()
     
     return back_text_img
 

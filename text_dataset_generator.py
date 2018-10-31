@@ -8,6 +8,7 @@ import random
 import math
 import signal
 import traceback
+import copy
 
 from freetype import *
 
@@ -173,19 +174,30 @@ def main():
     file_helper.create_directory_if_not_exists(config['Common']['outputs'])
 
     config["FontSizes"] = {}
+    config["OriginalText"] = copy.deepcopy(content)
+
+    image_names = []
+    annotation_names = []
 
     index = 0
     while content:
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
         font = fonts[random.randint(0, len(fonts) - 1)]
 
+        config["FontSizes"] = {}
+        config["Page"]["lineheight"] = np.random.randint(config["Page"]["minlineheight"], config["Page"]["maxlineheight"])
+
         try:
-            text_img, annotations, baselines, content = text_renderer.render_page(font, content, config)
+            text_img, annotations, baselines, new_content = text_renderer.render_page(font, content, config)
             config['Baseline'] = {'text': baselines}
         except Exception as ex:
             traceback.print_exc()
-            print("There was an error during creating image number", index)
-            print("Font:", font)
+            print("---", file=sys.stderr)
+            print("There was an error during creating image number", index, file=sys.stderr)
+            print("Text:", content[0][:30], "...", file=sys.stderr)
+            print("Font:", font, file=sys.stderr)
+            print("Trying to generate same text again.", file=sys.stderr)
+            print("---", file=sys.stderr)
             continue
 
         set_paddings(text_img, config)
@@ -199,23 +211,38 @@ def main():
         annotations = update_annotations(annotations, config['Padding']['left'], config['Padding']['top'])
         baselines = update_baselines(baselines, config['Padding']['left'], config['Padding']['top'])
 
-        semantic_segmentation_image = semantic_segmentation_helper.generate(text_img, annotations)
+        semantic_segmentation_image = None
+
+        if config['Common']['semanticsegmentation']:
+            semantic_segmentation_image = semantic_segmentation_helper.generate(text_img, annotations)
 
         try:
-            result = effects_helper.apply_effects(text_img, "", {}, font, background, config)
+            result = effects_helper.apply_effects(text_img, font, background, config)
         except Exception as ex:
             traceback.print_exc()
-            print("There was an error during applying effects on image number", index)
-            print("Font:", font)
+            print("---", file=sys.stderr)
+            print("There was an error during applying effects on image number", index, file=sys.stderr)
+            print("Text:", content[0][:30], "...", file=sys.stderr)
+            print("Font:", font, file=sys.stderr)
+            print("Trying to generate same text again.", file=sys.stderr)
+            print("---", file=sys.stderr)
             continue
 
+        content = new_content
+
         image_name = "image_" + str(index)
+
+        image_names.append(image_name + ".png")
+        annotation_names.append(image_name + ".xml")
 
         transkribus = xml_helper.annotations_and_baselines_to_transkribus_xml(annotations, baselines, image_name + ".png", result.shape[:2])
         file_helper.write_file(transkribus, config['Common']['outputs'] + image_name + ".xml")
 
         file_helper.write_image(result, config['Common']['outputs'] + image_name + ".png")
-        file_helper.write_image(semantic_segmentation_image, config['Common']['outputs'] + image_name + "_semantic.png")
+        
+        if config['Common']['semanticsegmentation'] and semantic_segmentation_image is not None:
+            file_helper.write_image(semantic_segmentation_image, config['Common']['outputs'] + image_name + "_semantic.png")
+
         file_helper.write_annotation_file(annotations, baselines, config['Common']['outputs'] + image_name + ".txt")
 
         if config['Common']['annotations']:
@@ -225,6 +252,8 @@ def main():
         index += 1
         print("Completed " + image_name + ".")
         sys.stdout.flush()
+
+    file_helper.write_file(xml_helper.mets_transkribus_xml(image_names, annotation_names), config['Common']['outputs'] + "mets.xml")
 
     # file_helper.write_file(output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
 

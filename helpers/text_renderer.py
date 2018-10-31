@@ -418,6 +418,9 @@ def _grayscale_to_rgba(img):
 
 
 def _remove_trailing_space(img):
+    if len(img.shape) != 2:
+        print(img.shape)
+
     top = 0
     bottom = 0
     left = 0

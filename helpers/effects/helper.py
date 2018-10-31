@@ -7,6 +7,7 @@ import time
 from noise import snoise3
 
 from helpers import text_renderer
+from helpers import file_helper
 
 def generate_text_line(current_word, word_dict, font, config, output_size_coef=2, number_of_added_words=5):
     target_width = config["OutputSize"]["width"] * output_size_coef
