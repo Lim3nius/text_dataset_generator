@@ -1,5 +1,9 @@
 # Text dataset generator
 
+Installation of packages needed for running:
+
+``pip install PILLOW, numpy, freetype-py, opencv-python, noise, lxml``
+
 How to run the script:  
 ``text_dataset_generator.py [-h] -c CONFIG``  
 
