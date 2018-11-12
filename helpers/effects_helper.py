@@ -1,9 +1,9 @@
 
 import random
 
-import file_helper
-import image_helper
-from effects import surrounding_text_effect, back_page_text_effect, printing_imperfections_effect, blurry_text_effect
+from helpers import file_helper
+from helpers import image_helper
+from helpers.effects import surrounding_text_effect, back_page_text_effect, printing_imperfections_effect, blurry_text_effect
 
 import numpy as np
 import cv2

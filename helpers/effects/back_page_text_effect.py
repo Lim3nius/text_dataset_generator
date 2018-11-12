@@ -5,7 +5,7 @@ import random
 import numpy as np
 import traceback
 
-import helper
+from helpers.effects import helper
 from helpers import image_helper
 from helpers import text_renderer
 

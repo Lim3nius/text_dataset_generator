@@ -2,7 +2,7 @@ import cv2
 import random
 import numpy as np
 
-import helper
+from helpers.effects import helper
 
 def apply_effect(img, config):
     height, width, channels = img.shape

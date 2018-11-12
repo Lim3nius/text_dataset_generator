@@ -3,7 +3,7 @@ from __future__ import print_function
 import sys
 from PIL import Image
 import numpy as np
-import ConfigParser
+import configparser
 import random
 import math
 import signal
@@ -22,7 +22,7 @@ from helpers import semantic_segmentation_helper
 
 def parse_configuration(config_path):
     config_dict = {}
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(config_path)
     for section in config.sections():
         config_dict[section] = parse_configuration_section(config, section)

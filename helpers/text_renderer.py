@@ -5,7 +5,7 @@ import cv2
 import math
 import sys
 
-import file_helper, image_helper
+from helpers import file_helper, image_helper
 
 
 def _recalculate_spaces(width, target_width, number_of_spaces, actual_space):
@@ -14,7 +14,7 @@ def _recalculate_spaces(width, target_width, number_of_spaces, actual_space):
     spaces = [space + actual_space] * number_of_spaces
     diff -= space * number_of_spaces
 
-    for i in range(diff):
+    for i in range(int(diff)):
         spaces[i] += 1
 
     return spaces
@@ -136,6 +136,9 @@ def _render_text_to_bitmap(face, text, width, height, baseline, image_array, con
             y = height-baseline-top
             kerning = face.get_kerning(previous, c)
             x += (kerning.x >> 6)
+
+            y, x = int(y), int(x)
+
             image_array[y:y+h,x:x+w] += np.array(bitmap.buffer, dtype='ubyte').reshape(h, w)
             characters_position.append((x, y, w, h))
             x += (slot.advance.x >> 6) + delta
@@ -250,7 +253,7 @@ def _join_lines(imgs, annotations, baselines, config):
             
             if result is None:
                 result = img
-                result_annotations = annotation
+                result_annotations = list(annotation)
                 if type(baseline) is list:
                     result_baselines = baseline
                 else:
@@ -340,6 +343,8 @@ def _render_paragraph(font, text, config, max_lines=float('inf')):
     while len(text_copy) > 0 and len(lines) < max_lines:
         line = _get_next_line(face, text_copy, config)
         width, height, baseline = _calculate_bounding_box(face, line, config);
+
+        width, height = int(width), int(height)
 
         line_img = np.zeros((height + SPACE_PADDING, width + SPACE_PADDING), dtype=np.ubyte)
         line_char_positions = _render_text_to_bitmap(face, line, width, height, baseline - SPACE_PADDING/2, line_img, config)
