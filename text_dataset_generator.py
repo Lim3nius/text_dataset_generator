@@ -170,7 +170,7 @@ def main():
 
     content = file_helper.read_file(config['Common']['input'], config['Text']['words'])
     content = modify_content(content, config)
-    
+
     file_helper.create_directory_if_not_exists(config['Common']['outputs'])
 
     config["FontSizes"] = {}
@@ -178,6 +178,8 @@ def main():
 
     image_names = []
     annotation_names = []
+    text_generation_failures = 0 # Counter of unsuccessfull attempts to generate
+    # given text
 
     index = 0
     while content:
@@ -192,13 +194,23 @@ def main():
             config['Baseline'] = {'text': baselines}
         except Exception as ex:
             traceback.print_exc()
+
+            if text_generation_failures > 5:
+                print("Skipping '{}' -- because unable to generate image".format(content[0][:10]))
+                content[0] = content[0][10:]
+                text_generation_failures = 0
+                continue
+
             print("---", file=sys.stderr)
             print("There was an error during creating image number", index, file=sys.stderr)
             print("Text:", content[0][:30], "...", file=sys.stderr)
             print("Font:", font, file=sys.stderr)
             print("Trying to generate same text again.", file=sys.stderr)
             print("---", file=sys.stderr)
+            text_generation_failures += 1
             continue
+
+        text_generation_failures = 0
 
         set_paddings(text_img, config)
         text_img = image_helper.add_padding_to_img(
