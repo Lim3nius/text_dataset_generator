@@ -8,10 +8,13 @@ THRESHOLD=128
 def generate(image, annotations):
     image_slice = image[:, :, 0]
     result = np.zeros(image.shape[:2])
-    
+
     for annotation in annotations:
         character, position = annotation
         x, y, w, h = position
+
+        # sometimes weight or height are float values
+        w,h = int(w), int(h)
 
         result[y:y+h, x:x+w] = _convert_char(character, image_slice[y:y+h, x:x+w])
 
