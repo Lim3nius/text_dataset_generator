@@ -1,0 +1,6 @@
+freetype-py==2.0.0.post6
+lxml==4.3.0
+noise==1.2.2
+numpy==1.16.0
+opencv-python==4.0.0.21
+Pillow==5.4.1
