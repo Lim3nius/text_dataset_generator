@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import sys
-from PIL import Image
+# from PIL import Image
 import numpy as np
 import configparser
 import random
@@ -18,7 +18,6 @@ from helpers import effects_helper
 from helpers import text_renderer
 from helpers import xml_helper
 from helpers import semantic_segmentation_helper
-
 
 def parse_configuration(config_path):
     config_dict = {}
@@ -124,7 +123,7 @@ def modify_line(line, config):
     output = line
     if config["Text"]["tolowercase"]:
         output = output.lower()
-    
+
     if config["Text"]["firstuppercase"] > 0.0:
         prob = config["Text"]["firstuppercase"]
         words = output.split()
@@ -144,10 +143,10 @@ def modify_line(line, config):
         punctuations = config["Text"]["punctuations"]
         for word in words:
             output += word
-            
+
             if np.random.random() < prob:
                 output += punctuations[np.random.randint(len(punctuations))]
-            
+
             output += " "
 
     return output.rstrip()
@@ -228,6 +227,9 @@ def main():
         if config['Common']['semanticsegmentation']:
             semantic_segmentation_image = semantic_segmentation_helper.generate(text_img, annotations)
 
+        if config['Common']['textgroundtruth']:
+            file_helper.write_image(text_img, config['Common']['outputs'] + 'image_' + str(index) + '_no_effect.png')
+
         try:
             result = effects_helper.apply_effects(text_img, font, background, config)
         except Exception as ex:
@@ -238,6 +240,9 @@ def main():
             print("Font:", font, file=sys.stderr)
             print("Trying to generate same text again.", file=sys.stderr)
             print("---", file=sys.stderr)
+
+            print('Skipping 10 characters. Reason: Unable to generate paragraph')
+            content[0]=content[0][10:]
             continue
 
         content = new_content
@@ -251,7 +256,7 @@ def main():
         file_helper.write_file(transkribus, config['Common']['outputs'] + image_name + ".xml")
 
         file_helper.write_image(result, config['Common']['outputs'] + image_name + ".png")
-        
+
         if config['Common']['semanticsegmentation'] and semantic_segmentation_image is not None:
             file_helper.write_image(semantic_segmentation_image, config['Common']['outputs'] + image_name + "_semantic.png")
 
