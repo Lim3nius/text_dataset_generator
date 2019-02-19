@@ -1,14 +1,13 @@
 from __future__ import print_function
 
 import sys
-# from PIL import Image
 import numpy as np
-import configparser
 import random
 import math
 import signal
 import traceback
 import copy
+import argparse
 
 from freetype import *
 
@@ -18,82 +17,14 @@ from helpers import effects_helper
 from helpers import text_renderer
 from helpers import xml_helper
 from helpers import semantic_segmentation_helper
-
-def parse_configuration(config_path):
-    config_dict = {}
-    config = configparser.ConfigParser()
-    config.read(config_path)
-    for section in config.sections():
-        config_dict[section] = parse_configuration_section(config, section)
-
-    return config_dict
-
-
-def parse_configuration_section(config, section):
-    section_dict = {}
-    options = config.options(section)
-    for option in options:
-        try:
-            value = config.get(section, option)
-            int_value = parse_int(value)
-            float_value = parse_float(value)
-            if value == 'True':
-                section_dict[option] = True
-            elif value == 'False':
-                section_dict[option] = False
-            elif float_value is not None:
-                section_dict[option] = float_value
-            elif int_value is not None:
-                section_dict[option] = int_value
-            else:
-                section_dict[option] = value
-        except:
-            print("exception on %s!" % option)
-            section_dict[option] = None
-    return section_dict
-
-
-def parse_int(s, base=10, value=None):
-    try:
-        return int(s, base)
-    except ValueError:
-        return value
-
-
-def parse_float(s, value=None):
-    if '.' in s:
-        try:
-            return float(s)
-        except ValueError:
-            pass
-    return value
-
-
-def parse_arguments():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-c', '--config', help='Path to the configuration file.', required=True)
-    args = parser.parse_args()
-    return args
-
-
-def build_dict(content):
-    words_dict = {}
-    for word in content:
-        try:
-            words_dict[word] += 1
-        except KeyError:
-            words_dict[word] = 1
-
-    return words_dict
-
+from helpers.config_helper import parse_configuration
 
 def update_annotations(annotations, padding_left, padding_top):
     new_annotations = []
     for annotation in annotations:
         character, position = annotation
         x, y, w, h = position
+        x, y, w, h = map(int, [x,y,z,w]) # ensure integer values (float can occur)
         new_annotations.append((character, (x+padding_left, y+padding_top, w, h)))
 
     return new_annotations
@@ -106,7 +37,6 @@ def update_baselines(baselines, padding_left, padding_top):
         new_baselines.append((x + padding_left, y + padding_top, w))
 
     return new_baselines
-
 
 
 def set_paddings(img, config):
@@ -158,6 +88,14 @@ def modify_content(content, config):
         new_content.append(modify_line(line, config))
 
     return new_content
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-c', '--config', help='Path to the configuration file.', required=True)
+    args = parser.parse_args()
+    return args
 
 
 def main():
