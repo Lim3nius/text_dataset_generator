@@ -18,13 +18,14 @@ from helpers import text_renderer
 from helpers import xml_helper
 from helpers import semantic_segmentation_helper
 from helpers.config_helper import parse_configuration
+from helpers.input_modifications import modify_content
 
 def update_annotations(annotations, padding_left, padding_top):
     new_annotations = []
     for annotation in annotations:
         character, position = annotation
         x, y, w, h = position
-        x, y, w, h = map(int, [x,y,z,w]) # ensure integer values (float can occur)
+        x, y, w, h = map(int, [x,y,w,h]) # ensure integer values (float can occur)
         new_annotations.append((character, (x+padding_left, y+padding_top, w, h)))
 
     return new_annotations
@@ -47,47 +48,6 @@ def set_paddings(img, config):
         'left': config['Page']['padding'],
         'right': config['Page']['padding'],
     }
-
-
-def modify_line(line, config):
-    output = line
-    if config["Text"]["tolowercase"]:
-        output = output.lower()
-
-    if config["Text"]["firstuppercase"] > 0.0:
-        prob = config["Text"]["firstuppercase"]
-        words = output.split()
-        output = ""
-        for word in words:
-            if np.random.random() < prob:
-                output += word.title()
-            else:
-                output += word
-
-            output += " "
-
-    if config["Text"]["punctuationafterword"]:
-        prob = config["Text"]["punctuationafterword"]
-        words = output.split()
-        output = ""
-        punctuations = config["Text"]["punctuations"]
-        for word in words:
-            output += word
-
-            if np.random.random() < prob:
-                output += punctuations[np.random.randint(len(punctuations))]
-
-            output += " "
-
-    return output.rstrip()
-
-
-def modify_content(content, config):
-    new_content = []
-    for line in content:
-        new_content.append(modify_line(line, config))
-
-    return new_content
 
 
 def parse_arguments():
@@ -216,4 +176,10 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    ex_code = 0
+    try:
+        ex_code = main()
+    except KeyboardInterrupt:
+        print('Generation cancelled')
+    sys.exit(ex_code)
+
