@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import string
+
 def _modify_line(line, config):
     output = line
     if config["Text"]["tolowercase"]:
@@ -36,6 +38,7 @@ def _modify_line(line, config):
 def modify_content(content, config):
     new_content = []
     for line in content:
+        printable_line = ''.join(filter(lambda c: c in string.printable, line))
         new_content.append(_modify_line(line, config))
 
     return new_content

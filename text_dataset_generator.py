@@ -19,6 +19,7 @@ from helpers import xml_helper
 from helpers import semantic_segmentation_helper
 from helpers.config_helper import parse_configuration
 from helpers.input_modifications import modify_content
+from helpers.postprocess_helper import background_thresholding
 
 def update_annotations(annotations, padding_left, padding_top):
     new_annotations = []
@@ -126,7 +127,8 @@ def main():
             semantic_segmentation_image = semantic_segmentation_helper.generate(text_img, annotations)
 
         if config['Common']['textgroundtruth']:
-            file_helper.write_image(text_img, config['Common']['outputs'] + 'image_' + str(index) + '_no_effect.png')
+            segmented = background_thresholding(text_img)
+            file_helper.write_image(segmented, config['Common']['outputs'] + 'image_' + str(index) + '_no_effect.png')
 
         try:
             result = effects_helper.apply_effects(text_img, font, background, config)
