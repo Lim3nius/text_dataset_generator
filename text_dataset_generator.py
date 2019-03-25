@@ -79,7 +79,7 @@ def main():
     text_generation_failures = 0 # Counter of unsuccessfull attempts to generate
     # given text
 
-    index = 0
+    index = config['Common']['numberstart']
     while content:
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
         font = fonts[random.randint(0, len(fonts) - 1)]
