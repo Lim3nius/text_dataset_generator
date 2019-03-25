@@ -128,7 +128,7 @@ def main():
 
         if config['Common']['textgroundtruth']:
             segmented = background_thresholding(text_img)
-            file_helper.write_image(segmented, config['Common']['outputs'] + 'image_' + str(index) + '_no_effect.png')
+            file_helper.write_image(segmented, config['Common']['outputs'] + config['Common']['imageprefix'] + '_' + str(index) + '_no_effect.png')
 
         try:
             result = effects_helper.apply_effects(text_img, font, background, config)
@@ -147,7 +147,7 @@ def main():
 
         content = new_content
 
-        image_name = "image_" + str(index)
+        image_name = config['Common']['imageprefix'] + "_" + str(index)
 
         image_names.append(image_name + ".png")
         annotation_names.append(image_name + ".xml")
