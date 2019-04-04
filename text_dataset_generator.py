@@ -58,6 +58,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-c', '--config', help='Path to the configuration file.', required=True)
+    parser.add_argument('--max', help='Maximum number of images to generate', type=int, default=10**6)
     args = parser.parse_args()
     return args
 
@@ -88,7 +89,7 @@ def main():
     manifest_row = {}
 
     index = config['Common']['numberstart']
-    while content:
+    while content and index < args.max + 1:
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
         font = fonts[random.randint(0, len(fonts) - 1)]
 
