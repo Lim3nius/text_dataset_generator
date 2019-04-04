@@ -412,7 +412,7 @@ def _calculate_font_size(font, config):
     return font_size
 
 
-def _grayscale_to_rgba(img):
+def _grayscale_to_rgba(img, color=[0,0,0]):
     w, h = img.shape
     ret = np.empty((w, h, 4), dtype=np.uint8)
     ret[:, :, 0] = 255 - img

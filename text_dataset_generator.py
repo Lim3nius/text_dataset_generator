@@ -1,4 +1,4 @@
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import sys
 import numpy as np
@@ -8,6 +8,7 @@ import signal
 import traceback
 import copy
 import argparse
+import csv
 
 from freetype import *
 
@@ -20,6 +21,8 @@ from helpers import semantic_segmentation_helper
 from helpers.config_helper import parse_configuration
 from helpers.input_modifications import modify_content
 from helpers.postprocess_helper import background_thresholding
+from helpers import manifest_helper
+from helpers import color_helper
 
 def update_annotations(annotations, padding_left, padding_top):
     new_annotations = []
@@ -79,6 +82,11 @@ def main():
     text_generation_failures = 0 # Counter of unsuccessfull attempts to generate
     # given text
 
+    field_names = manifest_helper.determine_header_names(config)
+    manifest_wrtr = csv.DictWriter(open(config['Common']['outputs'] + '/' + config['Common']['imageprefix']+'_manifest.csv', 'w'), field_names, dialect='unix')
+    manifest_wrtr.writeheader()
+    manifest_row = {}
+
     index = config['Common']['numberstart']
     while content:
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
@@ -109,6 +117,7 @@ def main():
             continue
 
         text_generation_failures = 0
+        text_img = color_helper.text_color_handle(text_img, config)
 
         set_paddings(text_img, config)
         text_img = image_helper.add_padding_to_img(
@@ -129,6 +138,7 @@ def main():
         if config['Common']['textgroundtruth']:
             segmented = background_thresholding(text_img)
             file_helper.write_image(segmented, config['Common']['outputs'] + config['Common']['imageprefix'] + '_' + str(index) + '_no_effect.png')
+            manifest_row['textgroundtruth'] = config['Common']['imageprefix'] + '_' + str(index) + '_no_effect.png'
 
         try:
             result = effects_helper.apply_effects(text_img, font, background, config)
@@ -156,17 +166,21 @@ def main():
         file_helper.write_file(transkribus, config['Common']['outputs'] + image_name + ".xml")
 
         file_helper.write_image(result, config['Common']['outputs'] + image_name + ".png")
+        manifest_row['image'] = image_name + '.png'
 
         if config['Common']['semanticsegmentation'] and semantic_segmentation_image is not None:
             file_helper.write_image(semantic_segmentation_image, config['Common']['outputs'] + image_name + "_semantic.png")
+            manifest_row['semanticsegmentation'] = image_name + '_semantic.png'
 
         file_helper.write_annotation_file(annotations, baselines, config['Common']['outputs'] + image_name + ".txt")
 
         if config['Common']['annotations']:
             result = image_helper.draw_annotations(result, annotations, baselines)
             file_helper.write_image(result, config['Common']['outputs'] + image_name + "_annotations.png")
+            manifest_row['semanticsegmentation'] = image_name + '_annotations.png'
 
         index += 1
+        manifest_wrtr.writerow(manifest_row)
         print("Completed " + image_name + ".")
         sys.stdout.flush()
 
