@@ -3,7 +3,7 @@
 import csv
 
 def determine_header_names(config):
-    names = ['image']
+    names = ['image', 'font']
     for opt in ['annotations', 'semanticsegmentation', 'textgroundtruth']:
         if config['Common'][opt]:
             names.append(opt)

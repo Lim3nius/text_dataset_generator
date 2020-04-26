@@ -8,7 +8,8 @@ import signal
 import traceback
 import copy
 import argparse
-import csv
+from multiprocessing import Process
+from itertools import count
 
 from freetype import *
 
@@ -23,13 +24,15 @@ from helpers.input_modifications import modify_content
 from helpers.postprocess_helper import background_thresholding
 from helpers import manifest_helper
 from helpers import color_helper
+from helpers.dict_writer import SyncWriterWrapper
+
 
 def update_annotations(annotations, padding_left, padding_top):
     new_annotations = []
     for annotation in annotations:
         character, position = annotation
         x, y, w, h = position
-        x, y, w, h = map(int, [x,y,w,h]) # ensure integer values (float can occur)
+        x, y, w, h = map(int, [x, y, w, h])  # ensure integer values (float can occur)
         new_annotations.append((character, (x+padding_left, y+padding_top, w, h)))
 
     return new_annotations
@@ -56,40 +59,22 @@ def set_paddings(img, config):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-c', '--config', help='Path to the configuration file.', required=True)
-    parser.add_argument('--max', help='Maximum number of images to generate', type=int, default=10**6)
+    parser.add_argument('-c', '--config',
+                        help='Path to the configuration file.', required=True)
+    parser.add_argument('--max', help='Maximum number of images to generate',
+                        type=int, default=10**6)
     args = parser.parse_args()
     return args
 
 
-def main():
-    args = parse_arguments()
-    config = parse_configuration(args.config)
-
-    backgrounds = file_helper.load_all_images(config['Common']['backgrounds'])
-    fonts = file_helper.load_all_fonts(config['Common']['fonts'])
-
-    content = file_helper.read_file(config['Common']['input'], config['Text']['words'])
-    content = modify_content(content, config)
-
-    file_helper.create_directory_if_not_exists(config['Common']['outputs'])
-
-    config["FontSizes"] = {}
-    config["OriginalText"] = copy.deepcopy(content)
-
-    image_names = []
-    annotation_names = []
-    text_generation_failures = 0 # Counter of unsuccessfull attempts to generate
-    # given text
-
-    field_names = manifest_helper.determine_header_names(config)
-    manifest_wrtr = csv.DictWriter(open(config['Common']['outputs'] + '/' + config['Common']['imageprefix']+'_manifest.csv', 'w'), field_names, dialect='unix')
-    manifest_wrtr.writeheader()
+def generator(config, content, index, fonts, backgrounds, args,
+              manifest_wrtr, start, increase):
+    # Counter of unsuccessfull attempts to generate given text
+    text_generation_failures = 0
     manifest_row = {}
-
-    index = config['Common']['numberstart']
-    while content and index < args.max + 1:
+    index += start
+    generated = 0
+    while content and generated < args.max + 1:
         background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
         font = fonts[random.randint(0, len(fonts) - 1)]
 
@@ -99,7 +84,7 @@ def main():
         try:
             text_img, annotations, baselines, new_content = text_renderer.render_page(font, content, config)
             config['Baseline'] = {'text': baselines}
-        except Exception as ex:
+        except Exception:
             traceback.print_exc()
 
             if text_generation_failures > 5:
@@ -138,15 +123,15 @@ def main():
 
         if config['Common']['textgroundtruth']:
             segmented = background_thresholding(text_img)
-            file_helper.write_image(segmented, config['Common']['outputs'] + config['Common']['imageprefix'] + '_' + str(index) + '_no_effect.png')
+            file_helper.write_image(segmented, config['Common']['outputs'] + config['Common']['imageprefix'] + '_' + str(index ) + '_no_effect.png')
             manifest_row['textgroundtruth'] = config['Common']['imageprefix'] + '_' + str(index) + '_no_effect.png'
 
         try:
             result = effects_helper.apply_effects(text_img, font, background, config)
-        except Exception as ex:
+        except Exception:
             traceback.print_exc()
             print("---", file=sys.stderr)
-            print("There was an error during applying effects on image number", index, file=sys.stderr)
+            print("There was an error during applying effects on image number", (index), file=sys.stderr)
             print("Text:", content[0][:30], "...", file=sys.stderr)
             print("Font:", font, file=sys.stderr)
             print("Trying to generate same text again.", file=sys.stderr)
@@ -160,14 +145,15 @@ def main():
 
         image_name = config['Common']['imageprefix'] + "_" + str(index)
 
-        image_names.append(image_name + ".png")
-        annotation_names.append(image_name + ".xml")
+        # image_names.append(image_name + ".png")
+        # annotation_names.append(image_name + ".xml")
 
         transkribus = xml_helper.annotations_and_baselines_to_transkribus_xml(annotations, baselines, image_name + ".png", result.shape[:2])
         file_helper.write_file(transkribus, config['Common']['outputs'] + image_name + ".xml")
 
         file_helper.write_image(result, config['Common']['outputs'] + image_name + ".png")
         manifest_row['image'] = image_name + '.png'
+        manifest_row['font'] = font
 
         if config['Common']['semanticsegmentation'] and semantic_segmentation_image is not None:
             file_helper.write_image(semantic_segmentation_image, config['Common']['outputs'] + image_name + "_semantic.png")
@@ -180,15 +166,59 @@ def main():
             file_helper.write_image(result, config['Common']['outputs'] + image_name + "_annotations.png")
             manifest_row['semanticsegmentation'] = image_name + '_annotations.png'
 
-        index += 1
+        index += increase
+        generated += 1
         manifest_wrtr.writerow(manifest_row)
         print("Completed " + image_name + ".")
         sys.stdout.flush()
 
-    file_helper.write_file(xml_helper.mets_transkribus_xml(image_names, annotation_names), config['Common']['outputs'] + "mets.xml")
+    print(f'Generated: {generated} < {args.max}')
+    print(f'Remaining content {len(content)}')
 
-    # file_helper.write_file(output_classes_content, config['Common']['outputs'] + train_or_test + "output.txt")
 
+def main():
+    args = parse_arguments()
+    config = parse_configuration(args.config)
+
+    backgrounds = file_helper.load_all_images(config['Common']['backgrounds'])
+    fonts = file_helper.load_all_fonts(config['Common']['fonts'])
+
+    content = file_helper.read_file(config['Common']['input'], config['Text']['words'])
+    content = modify_content(content, config)
+
+    file_helper.create_directory_if_not_exists(config['Common']['outputs'])
+
+    config["FontSizes"] = {}
+    config["OriginalText"] = copy.deepcopy(content)
+
+    # TODO: add back
+    # image_names = []
+    # annotation_names = []
+
+    # field_names = manifest_helper.determine_header_names(config)
+    manifest_wrtr = SyncWriterWrapper(config['Common']['outputs'] + '/' + config['Common']['imageprefix']+'_manifest.csv')
+
+    index = config['Common']['numberstart']
+    pcs = []
+    w_cnt = config['Common']['workers']
+
+    try:
+        for i in range(w_cnt):
+            pcs.append(Process(target=generator,
+                            args=(config, copy.deepcopy(content), index,
+                                        fonts, backgrounds, args,
+                                        manifest_wrtr, i, w_cnt)))
+            pcs[-1].start()
+
+        for i in range(w_cnt):
+            pcs[i].join()
+
+        # manifest_wrtr.close()
+    except Exception as ex:
+        print(f'Something went wrong: {ex}')
+        raise
+
+    manifest_wrtr.close()
     return 0
 
 
@@ -197,6 +227,9 @@ if __name__ == "__main__":
     try:
         ex_code = main()
     except KeyboardInterrupt:
-        print('Generation cancelled')
-    sys.exit(ex_code)
+        print('Stopped by user')
 
+    except Exception as e:
+        print(f'Stopped because of exception: {e}')
+
+    sys.exit(ex_code)
