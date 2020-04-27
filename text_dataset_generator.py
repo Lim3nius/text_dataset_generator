@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
 import sys
-import numpy as np
 import random
-import math
-import signal
 import traceback
 import copy
 import argparse
 from multiprocessing import Process
-from itertools import count
+import numpy as np
 
-from freetype import *
+# from freetype import *
 
 from helpers import file_helper
 from helpers import image_helper
@@ -25,6 +22,7 @@ from helpers.postprocess_helper import background_thresholding
 from helpers import manifest_helper
 from helpers import color_helper
 from helpers.dict_writer import SyncWriterWrapper
+from helpers import baseline_helper
 
 
 def update_annotations(annotations, padding_left, padding_top):
@@ -63,6 +61,14 @@ def parse_arguments():
                         help='Path to the configuration file.', required=True)
     parser.add_argument('--max', help='Maximum number of images to generate',
                         type=int, default=10**6)
+    parser.add_argument('-w', '--workers', default=1, type=int,
+                        help="Number of paralell workers to start")
+
+    sp = parser.add_subparsers(help="sub command")
+    pb = sp.add_parser("baseline", help="foo")
+    pb.add_argument('path', help="Path to file with baseline info")
+    pb.set_defaults(func= baseline_helper.main)
+
     args = parser.parse_args()
     return args
 
@@ -74,12 +80,21 @@ def generator(config, content, index, fonts, backgrounds, args,
     manifest_row = {}
     index += start
     generated = 0
-    while content and generated < args.max + 1:
-        background = np.copy(backgrounds[random.randint(0, len(backgrounds) - 1)])
+    to_generate = args.max // args.workers
+
+    # if job can't be perfectly divided, give rest to first worker
+    rest = args.max % args.workers
+    if rest > 0 and start == 0:
+        to_generate += rest
+
+    while content and generated < to_generate:
+        background = np.copy(
+            backgrounds[random.randint(0, len(backgrounds) - 1)])
         font = fonts[random.randint(0, len(fonts) - 1)]
 
         config["FontSizes"] = {}
-        config["Page"]["lineheight"] = np.random.randint(config["Page"]["minlineheight"], config["Page"]["maxlineheight"])
+        config["Page"]["lineheight"] = np.random.randint(
+            config["Page"]["minlineheight"], config["Page"]["maxlineheight"])
 
         try:
             text_img, annotations, baselines, new_content = text_renderer.render_page(font, content, config)
@@ -88,13 +103,15 @@ def generator(config, content, index, fonts, backgrounds, args,
             traceback.print_exc()
 
             if text_generation_failures > 5:
-                print("Skipping '{}' -- because unable to generate image".format(content[0][:10]))
+                print("Skipping '{}' -- because unable to generate image".
+                      format(content[0][:10]))
                 content[0] = content[0][10:]
                 text_generation_failures = 0
                 continue
 
             print("---", file=sys.stderr)
-            print("There was an error during creating image number", index, file=sys.stderr)
+            print("There was an error during creating image number",
+                  index, file=sys.stderr)
             print("Text:", content[0][:30], "...", file=sys.stderr)
             print("Font:", font, file=sys.stderr)
             print("Trying to generate same text again.", file=sys.stderr)
@@ -172,8 +189,7 @@ def generator(config, content, index, fonts, backgrounds, args,
         print("Completed " + image_name + ".")
         sys.stdout.flush()
 
-    print(f'Generated: {generated} < {args.max}')
-    print(f'Remaining content {len(content)}')
+    print(f'Worker {start} exited')
 
 
 def main():
@@ -183,7 +199,8 @@ def main():
     backgrounds = file_helper.load_all_images(config['Common']['backgrounds'])
     fonts = file_helper.load_all_fonts(config['Common']['fonts'])
 
-    content = file_helper.read_file(config['Common']['input'], config['Text']['words'])
+    content = file_helper.read_file(config['Common']['input'],
+                                    config['Text']['words'])
     content = modify_content(content, config)
 
     file_helper.create_directory_if_not_exists(config['Common']['outputs'])
@@ -196,26 +213,30 @@ def main():
     # annotation_names = []
 
     # field_names = manifest_helper.determine_header_names(config)
-    manifest_wrtr = SyncWriterWrapper(config['Common']['outputs'] + '/' + config['Common']['imageprefix']+'_manifest.csv')
+    manifest_wrtr = SyncWriterWrapper(config['Common']['outputs'] + '/' +
+                                      config['Common']['imageprefix'] +
+                                      '_manifest.csv')
 
     index = config['Common']['numberstart']
     pcs = []
-    w_cnt = config['Common']['workers']
+
+    print(f'starting {args.workers} workers')
 
     try:
-        for i in range(w_cnt):
+        for i in range(args.workers):
             pcs.append(Process(target=generator,
-                            args=(config, copy.deepcopy(content), index,
-                                        fonts, backgrounds, args,
-                                        manifest_wrtr, i, w_cnt)))
+                               args=(config, copy.deepcopy(content), index,
+                                     fonts, backgrounds, args,
+                                     manifest_wrtr, i, args.workers)))
             pcs[-1].start()
 
-        for i in range(w_cnt):
+        for i in range(args.workers):
             pcs[i].join()
 
         # manifest_wrtr.close()
     except Exception as ex:
         print(f'Something went wrong: {ex}')
+        print(traceback.format_exc())
         raise
 
     manifest_wrtr.close()
