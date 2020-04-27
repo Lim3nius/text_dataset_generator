@@ -8,8 +8,6 @@ import argparse
 from multiprocessing import Process
 import numpy as np
 
-# from freetype import *
-
 from helpers import file_helper
 from helpers import image_helper
 from helpers import effects_helper
