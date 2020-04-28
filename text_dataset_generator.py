@@ -6,6 +6,7 @@ import traceback
 import copy
 import argparse
 from logging import getLogger
+from signal import signal, SIGINT, SIGTERM
 from multiprocessing import Process
 import numpy as np
 
@@ -230,8 +231,16 @@ def main():
 
     index = config['Common']['numberstart']
     pcs = []
+    log.info(f'starting {args.workers} workers')
 
-    print(f'starting {args.workers} workers')
+    # proper handling of Ctl-c
+    def teardown(signum, frame):
+        log.debug('Terminating processes')
+        for p in pcs:
+            p.kill()
+
+    signal(SIGINT, teardown)
+    signal(SIGTERM, teardown)
 
     try:
         for i in range(args.workers):
@@ -248,7 +257,7 @@ def main():
     except Exception as ex:
         print(f'Something went wrong: {ex}')
         print(traceback.format_exc())
-        raise
+        raise ex
 
     manifest_wrtr.close()
     return 0
