@@ -5,6 +5,7 @@ import random
 import traceback
 import copy
 import argparse
+from logging import getLogger
 from multiprocessing import Process
 import numpy as np
 
@@ -21,6 +22,9 @@ from helpers import manifest_helper
 from helpers import color_helper
 from helpers.dict_writer import SyncWriterWrapper
 from helpers import baseline_helper
+from helpers import logger
+
+log = getLogger()
 
 
 def update_annotations(annotations, padding_left, padding_top):
@@ -61,11 +65,14 @@ def parse_arguments():
                         type=int, default=10**6)
     parser.add_argument('-w', '--workers', default=1, type=int,
                         help="Number of paralell workers to start")
+    parser.add_argument("-l", "--log-level", default='info', type=str,
+                        choices=['debug', 'info', 'warning', 'error'],
+                        help="Level of logging")
 
     sp = parser.add_subparsers(help="sub command")
     pb = sp.add_parser("baseline", help="foo")
     pb.add_argument('path', help="Path to file with baseline info")
-    pb.set_defaults(func= baseline_helper.main)
+    pb.set_defaults(func=baseline_helper.main)
 
     args = parser.parse_args()
     return args
@@ -192,10 +199,16 @@ def generator(config, content, index, fonts, backgrounds, args,
 
 def main():
     args = parse_arguments()
+    logger.setup_logger(args.log_level)
+    log.info(f'Generator started')
+
     config = parse_configuration(args.config)
 
     backgrounds = file_helper.load_all_images(config['Common']['backgrounds'])
     fonts = file_helper.load_all_fonts(config['Common']['fonts'])
+
+    if args.func:
+        args.func(args.path)
 
     content = file_helper.read_file(config['Common']['input'],
                                     config['Text']['words'])
@@ -246,9 +259,9 @@ if __name__ == "__main__":
     try:
         ex_code = main()
     except KeyboardInterrupt:
-        print('Stopped by user')
+        log.info('Stopped by user')
 
     except Exception as e:
-        print(f'Stopped because of exception: {e}')
+        log.warning(f'Stopped because of exception: {e}')
 
     sys.exit(ex_code)
