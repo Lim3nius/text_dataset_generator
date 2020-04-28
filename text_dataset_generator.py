@@ -60,15 +60,18 @@ def set_paddings(img, config):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config',
+    parser.add_argument('--config',
                         help='Path to the configuration file.', required=True)
-    parser.add_argument('--max', help='Maximum number of images to generate',
-                        type=int, default=10**6)
+    parser.add_argument('-c', '--count', type=int, default=10**6,
+                        help='Maximum number of images to generate')
     parser.add_argument('-w', '--workers', default=1, type=int,
                         help="Number of paralell workers to start")
     parser.add_argument("-l", "--log-level", default='info', type=str,
                         choices=['debug', 'info', 'warning', 'error'],
                         help="Level of logging")
+    parser.add_argument("--prefix", default=None, type=str,
+                        help=("Prefix for newly generated images."
+                              "Config has higer priority"))
 
     sp = parser.add_subparsers(help="sub command")
     pb = sp.add_parser("baseline", help="foo")
@@ -80,16 +83,18 @@ def parse_arguments():
 
 
 def generator(config, content, index, fonts, backgrounds, args,
-              manifest_wrtr, start, increase):
+              manifest_wrtr, start):
     # Counter of unsuccessfull attempts to generate given text
     text_generation_failures = 0
     manifest_row = {}
     index += start
     generated = 0
-    to_generate = args.max // args.workers
+    to_generate = args.count // args.workers
+    step = args.workers
+    prefix = args.prefix if args.prefix else config['Common']['imageprefix']
 
     # if job can't be perfectly divided, give rest to first worker
-    rest = args.max % args.workers
+    rest = args.count % args.workers
     if rest > 0 and start == 0:
         to_generate += rest
 
@@ -146,8 +151,8 @@ def generator(config, content, index, fonts, backgrounds, args,
 
         if config['Common']['textgroundtruth']:
             segmented = background_thresholding(text_img)
-            file_helper.write_image(segmented, config['Common']['outputs'] + config['Common']['imageprefix'] + '_' + str(index ) + '_no_effect.png')
-            manifest_row['textgroundtruth'] = config['Common']['imageprefix'] + '_' + str(index) + '_no_effect.png'
+            file_helper.write_image(segmented, config['Common']['outputs'] + prefix + '_' + str(index ) + '_no_effect.png')
+            manifest_row['textgroundtruth'] = prefix + '_' + str(index) + '_no_effect.png'
 
         try:
             result = effects_helper.apply_effects(text_img, font, background, config)
@@ -166,7 +171,7 @@ def generator(config, content, index, fonts, backgrounds, args,
 
         content = new_content
 
-        image_name = config['Common']['imageprefix'] + "_" + str(index)
+        image_name = prefix + "_" + str(index)
 
         # image_names.append(image_name + ".png")
         # annotation_names.append(image_name + ".xml")
@@ -189,7 +194,7 @@ def generator(config, content, index, fonts, backgrounds, args,
             file_helper.write_image(result, config['Common']['outputs'] + image_name + "_annotations.png")
             manifest_row['semanticsegmentation'] = image_name + '_annotations.png'
 
-        index += increase
+        index += step
         generated += 1
         manifest_wrtr.writerow(manifest_row)
         print("Completed " + image_name + ".")
@@ -204,12 +209,13 @@ def main():
     log.info(f'Generator started')
 
     config = parse_configuration(args.config)
+    prefix = args.prefix if args.prefix else config['Common']['imageprefix']
 
     backgrounds = file_helper.load_all_images(config['Common']['backgrounds'])
     fonts = file_helper.load_all_fonts(config['Common']['fonts'])
 
-    if args.func:
-        args.func(args.path)
+    # if args.get('func'):
+    #     args.func(args.path)
 
     content = file_helper.read_file(config['Common']['input'],
                                     config['Text']['words'])
@@ -225,9 +231,9 @@ def main():
     # annotation_names = []
 
     # field_names = manifest_helper.determine_header_names(config)
-    manifest_wrtr = SyncWriterWrapper(config['Common']['outputs'] + '/' +
-                                      config['Common']['imageprefix'] +
-                                      '_manifest.csv')
+    manifest_wrtr = SyncWriterWrapper(config['Common']['outputs'] +
+                                      '/' + prefix + '_manifest.csv')
+
 
     index = config['Common']['numberstart']
     pcs = []
@@ -247,7 +253,7 @@ def main():
             pcs.append(Process(target=generator,
                                args=(config, copy.deepcopy(content), index,
                                      fonts, backgrounds, args,
-                                     manifest_wrtr, i, args.workers)))
+                                     manifest_wrtr, i)))
             pcs[-1].start()
 
         for i in range(args.workers):
