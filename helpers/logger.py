@@ -18,6 +18,13 @@ string_to_level = {
     'error': logging.ERROR,
 }
 
+log_level_table = {
+    'debug': log.debug,
+    'info': log.info,
+    'warn': log.warn,
+    'error': log.error,
+}
+
 
 def setup_logger(level: str) -> None:
     """
@@ -31,3 +38,15 @@ def setup_logger(level: str) -> None:
     logging.basicConfig(format=LOG_FORMAT, datefmt=DATE_FMT)
     proper_level = string_to_level.get(level, logging.INFO)
     log.setLevel(proper_level)
+
+
+def log_function_call(log_level):
+    def wrapper(f):
+        def inner(*args, **kwargs):
+            log_level_table[log_level](
+                f'Call to {f.__name__}({args},{kwargs}')
+            res = f(*args, **kwargs)
+            log_level_table[log_level](f'Return from {f.__name__} -> {res}')
+            return res
+        return inner
+    return wrapper
