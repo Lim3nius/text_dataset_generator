@@ -3,6 +3,8 @@ import numpy as np
 import string
 import os
 
+from typing import Iterable
+
 
 def read_file(file_name, words=False):
     content = []
@@ -78,3 +80,37 @@ def load_all_fonts(dir_name):
              if os.path.isfile(os.path.join(dir_name, f)) and
              f.lower().endswith(".otf") or f.lower().endswith(".ttf")]
     return fonts
+
+
+class LazyLoader(dict):
+    """
+    LazyLoader is dict which loads key data lazily.
+    When item is accessed first time, loader_fn is called with argument being
+    the key
+    """
+    def __init__(self, collection: Iterable, loader_fn):
+        self.collection = set(collection)
+        self.loader_fn = loader_fn
+
+    def __getitem__(self, key):
+        try:
+            v = dict.__getitem__(self, key)
+        except KeyError:
+            v = self.loader_fn(key)
+            dict.__setitem__(self, key, v)
+
+            if v not in self.collection:
+                self.collection.add(v)
+
+        return v
+
+    def keys(self) -> Iterable:
+        return list(self.collection)
+
+    def load(self):
+        for k in self.collection:
+            try:
+                v = self.loader_fn(k)
+            except Exception as e:
+                raise Exception(f'Error occured during loading {k} -> {e}')
+            dict.__setitem__(self, k, v)
