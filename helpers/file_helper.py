@@ -3,7 +3,9 @@ import numpy as np
 import string
 import os
 
-from typing import Iterable
+from typing import Iterable, List
+from pathlib import Path
+from random import choice
 
 
 def read_file(file_name, words=False):
@@ -99,8 +101,8 @@ class LazyLoader(dict):
             v = self.loader_fn(key)
             dict.__setitem__(self, key, v)
 
-            if v not in self.collection:
-                self.collection.add(v)
+            if key not in self.collection:
+                self.collection.add(key)
 
         return v
 
@@ -114,3 +116,37 @@ class LazyLoader(dict):
             except Exception as e:
                 raise Exception(f'Error occured during loading {k} -> {e}')
             dict.__setitem__(self, k, v)
+
+    def __repr__(self):
+        return self.collection.__repr__()
+
+    def __len__(self):
+        return len(self.collection)
+
+    def random_item(self):
+        c = choice(list(self.collection))
+        return self[c]
+
+
+def load_images(dir_name) -> LazyLoader:
+    p = Path(dir_name)
+    if not p.exists() or not p.is_dir():
+        raise Exception('Invalid images directory "{dir_name}"')
+
+    images = []
+    for ext in ['jpg', 'png']:
+        images.extend(list(p.glob('*.'+ext)))
+
+    return LazyLoader(images, lambda i: read_image(i))
+
+
+def load_fonts(dir_name: str) -> List:
+    p = Path(dir_name)
+    if not p.exists() or not p.is_dir():
+        raise Exception('Invalid font directory "{dir_name}"')
+
+    fonts = []
+    for ext in ['otf', 'ttf']:
+        fonts.extend(list(p.glob('*.'+ext)))
+
+    return fonts

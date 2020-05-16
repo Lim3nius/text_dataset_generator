@@ -33,8 +33,10 @@ def update_annotations(annotations, padding_left, padding_top):
     for annotation in annotations:
         character, position = annotation
         x, y, w, h = position
-        x, y, w, h = map(int, [x, y, w, h])  # ensure integer values (float can occur)
-        new_annotations.append((character, (x+padding_left, y+padding_top, w, h)))
+        # ensure integer values (float can occur)
+        x, y, w, h = map(int, [x, y, w, h])
+        new_annotations.append(
+            (character, (x+padding_left, y+padding_top, w, h)))
 
     return new_annotations
 
@@ -60,10 +62,11 @@ def set_paddings(img, config):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config',
-                        help='Path to the configuration file.', required=True)
+    parser.add_argument('--config', default='config.ini',
+                        help='Path to the configuration file. If not provided'
+                        '"config.ini" in working directory will be used')
     parser.add_argument('-c', '--count', type=int, default=10**6,
-                        help='Maximum number of images to generate')
+                        help='Number of images to generate')
     parser.add_argument('-w', '--workers', default=1, type=int,
                         help="Number of paralell workers to start")
     parser.add_argument("-l", "--log-level", default='info', type=str,
@@ -93,14 +96,13 @@ def generator(config, content, index, fonts, backgrounds, args,
     step = args.workers
     prefix = args.prefix if args.prefix else config['Common']['imageprefix']
 
-    # if job can't be perfectly divided, give rest to first worker
+    # if job can't be perfectly divided, give remaining to first worker
     rest = args.count % args.workers
     if rest > 0 and start == 0:
         to_generate += rest
 
     while content and generated < to_generate:
-        background = np.copy(
-            backgrounds[random.randint(0, len(backgrounds) - 1)])
+        background = np.copy(backgrounds.random_item())
         font = fonts[random.randint(0, len(fonts) - 1)]
 
         config["FontSizes"] = {}
@@ -145,17 +147,20 @@ def generator(config, content, index, fonts, backgrounds, args,
         baselines = update_baselines(baselines, config['Padding']['left'], config['Padding']['top'])
 
         semantic_segmentation_image = None
+        image_name = prefix + "_" + str(index)
 
         if config['Common']['semanticsegmentation']:
             semantic_segmentation_image = semantic_segmentation_helper.generate(text_img, annotations)
 
         if config['Common']['textgroundtruth']:
             segmented = background_thresholding(text_img)
-            file_helper.write_image(segmented, config['Common']['outputs'] + prefix + '_' + str(index ) + '_no_effect.png')
-            manifest_row['textgroundtruth'] = prefix + '_' + str(index) + '_no_effect.png'
+            file_helper.write_image(segmented, config['Common']['outputs'] +
+                                     image_name + '_no_effect.png')
+            manifest_row['textgroundtruth'] = image_name + '_no_effect.png'
 
         try:
-            result = effects_helper.apply_effects(text_img, font, background, config)
+            result = effects_helper.apply_effects(text_img, font, background,
+                                                  config)
         except Exception:
             traceback.print_exc()
             print("---", file=sys.stderr)
@@ -166,32 +171,32 @@ def generator(config, content, index, fonts, backgrounds, args,
             print("---", file=sys.stderr)
 
             print('Skipping 10 characters. Reason: Unable to generate paragraph')
-            content[0]=content[0][10:]
+            content[0] = content[0][10:]
             continue
 
         content = new_content
 
-        image_name = prefix + "_" + str(index)
+        manifest_row['image'] = image_name + '.png'
+        manifest_row['font'] = font
+        path = config['Common']['outputs'] + image_name
 
         # image_names.append(image_name + ".png")
         # annotation_names.append(image_name + ".xml")
 
         transkribus = xml_helper.annotations_and_baselines_to_transkribus_xml(annotations, baselines, image_name + ".png", result.shape[:2])
-        file_helper.write_file(transkribus, config['Common']['outputs'] + image_name + ".xml")
+        file_helper.write_file(transkribus, path + ".xml")
 
-        file_helper.write_image(result, config['Common']['outputs'] + image_name + ".png")
-        manifest_row['image'] = image_name + '.png'
-        manifest_row['font'] = font
+        file_helper.write_image(result, path + ".png")
 
         if config['Common']['semanticsegmentation'] and semantic_segmentation_image is not None:
-            file_helper.write_image(semantic_segmentation_image, config['Common']['outputs'] + image_name + "_semantic.png")
+            file_helper.write_image(semantic_segmentation_image, path + "_semantic.png")
             manifest_row['semanticsegmentation'] = image_name + '_semantic.png'
 
-        file_helper.write_annotation_file(annotations, baselines, config['Common']['outputs'] + image_name + ".txt")
+        file_helper.write_annotation_file(annotations, baselines, path + ".txt")
 
         if config['Common']['annotations']:
             result = image_helper.draw_annotations(result, annotations, baselines)
-            file_helper.write_image(result, config['Common']['outputs'] + image_name + "_annotations.png")
+            file_helper.write_image(result, path + "_annotations.png")
             manifest_row['semanticsegmentation'] = image_name + '_annotations.png'
 
         index += step
@@ -203,19 +208,34 @@ def generator(config, content, index, fonts, backgrounds, args,
     print(f'Worker {start} exited')
 
 
+class Storage:
+    """docstring for ClassName"""
+    def __init__(self, config):
+        self.config = config
+
+        self.backgrounds = file_helper.load_images(
+            config['Common']['backgrounds'])
+        self.fonts = file_helper.load_fonts(config['Common']['fonts'])
+
+
 def main():
     args = parse_arguments()
     logger.setup_logger(args.log_level)
-    log.info(f'Generator started')
+    log.info('Generator started')
 
     config = parse_configuration(args.config)
+    log.info('Configuration parsed')
     prefix = args.prefix if args.prefix else config['Common']['imageprefix']
+    storage = Storage(config)
+    log.debug('Storage loaded')
 
-    backgrounds = file_helper.load_all_images(config['Common']['backgrounds'])
-    fonts = file_helper.load_all_fonts(config['Common']['fonts'])
+    backgrounds = storage.backgrounds
+    fonts = storage.fonts
 
-    # if args.get('func'):
-    #     args.func(args.path)
+    try:
+        args.func(args.path, config, storage)
+    except Exception:
+        pass
 
     content = file_helper.read_file(config['Common']['input'],
                                     config['Text']['words'])
@@ -233,7 +253,6 @@ def main():
     # field_names = manifest_helper.determine_header_names(config)
     manifest_wrtr = SyncWriterWrapper(config['Common']['outputs'] +
                                       '/' + prefix + '_manifest.csv')
-
 
     index = config['Common']['numberstart']
     pcs = []
@@ -255,6 +274,8 @@ def main():
                                      fonts, backgrounds, args,
                                      manifest_wrtr, i)))
             pcs[-1].start()
+
+        log.debug('All workers started')
 
         for i in range(args.workers):
             pcs[i].join()
