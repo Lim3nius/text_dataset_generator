@@ -6,6 +6,7 @@ import os
 from typing import Iterable, List
 from pathlib import Path
 from random import choice
+from freetype import Face
 
 
 def read_file(file_name, words=False):
@@ -123,9 +124,9 @@ class LazyLoader(dict):
     def __len__(self):
         return len(self.collection)
 
-    def random_item(self):
+    def random_pair(self):
         c = choice(list(self.collection))
-        return self[c]
+        return (c, self[c])
 
 
 def load_images(dir_name) -> LazyLoader:
@@ -140,13 +141,13 @@ def load_images(dir_name) -> LazyLoader:
     return LazyLoader(images, lambda i: read_image(i))
 
 
-def load_fonts(dir_name: str) -> List:
+def load_fonts(dir_name: str) -> LazyLoader:
     p = Path(dir_name)
     if not p.exists() or not p.is_dir():
         raise Exception('Invalid font directory "{dir_name}"')
 
     fonts = []
     for ext in ['otf', 'ttf']:
-        fonts.extend(list(p.glob('*.'+ext)))
+        fonts.extend(list(map(lambda e: e.as_posix(), p.glob('*.'+ext))))
 
-    return fonts
+    return LazyLoader(fonts, lambda f: Face(f))

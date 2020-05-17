@@ -322,7 +322,7 @@ def render_page(font, text, config):
     return _grayscale_to_rgba(page), annotations, baselines, text
 
 
-def _render_paragraph(font, text, config, max_lines=float('inf')):
+def _render_paragraph(face, text, config, max_lines=float('inf')):
     # calculation of bounding box is not correct,
     # therefore this is constant which is always
     # added to calculated width and height and
@@ -332,15 +332,14 @@ def _render_paragraph(font, text, config, max_lines=float('inf')):
     SPACE_PADDING = 50
 
     font_size = 0
-    try:
-        font_size = config["FontSizes"][font]
-    except KeyError:
-        font_size = _calculate_font_size(font, config)
-        config["FontSizes"][font] = font_size
+    # try:
+    #     font_size = config["FontSizes"][font]
+    # except KeyError:
+    font_size = _calculate_font_size(face, config)
+    config["FontSizes"][face] = font_size
 
     config["CurrentTransformations"] = _generate_transformations(text, config)
 
-    face = Face(font)
     face.set_char_size(font_size)
 
     text_copy = text
@@ -353,7 +352,7 @@ def _render_paragraph(font, text, config, max_lines=float('inf')):
     while len(text_copy) > 0 and len(lines) < max_lines:
         line = _get_next_line(face, text_copy, config)
         width, height, baseline = _calculate_bounding_box(
-            face, line, config);
+            face, line, config)
 
         width, height = int(width), int(height)
 
@@ -403,15 +402,14 @@ def _render_paragraph(font, text, config, max_lines=float('inf')):
     return img, annotations, baselines
 
 
-def _calculate_font_size(font, config):
+def _calculate_font_size(face, config):
     font_size = 2000
     text = "abcdefghijklmnopqrstuvwxyz"
     height_epsilon = 2
 
-    face = Face(font)
     face.set_char_size(font_size)
 
-    _, height, _= _calculate_bounding_box(face, text, config);
+    _, height, _= _calculate_bounding_box(face, text, config)
 
     target_height = config["Page"]["lineheight"]
     lower_bound = target_height - height_epsilon

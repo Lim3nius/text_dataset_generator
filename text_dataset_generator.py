@@ -102,15 +102,15 @@ def generator(config, content, index, fonts, backgrounds, args,
         to_generate += rest
 
     while content and generated < to_generate:
-        background = np.copy(backgrounds.random_item())
-        font = fonts[random.randint(0, len(fonts) - 1)]
+        background_name, background = np.copy(backgrounds.random_pair())
+        font_name, face = fonts.random_pair()
 
         config["FontSizes"] = {}
         config["Page"]["lineheight"] = np.random.randint(
             config["Page"]["minlineheight"], config["Page"]["maxlineheight"])
 
         try:
-            text_img, annotations, baselines, new_content = text_renderer.render_page(font, content, config)
+            text_img, annotations, baselines, new_content = text_renderer.render_page(face, content, config)
             config['Baseline'] = {'text': baselines}
         except Exception:
             traceback.print_exc()
@@ -126,7 +126,7 @@ def generator(config, content, index, fonts, backgrounds, args,
             print("There was an error during creating image number",
                   index, file=sys.stderr)
             print("Text:", content[0][:30], "...", file=sys.stderr)
-            print("Font:", font, file=sys.stderr)
+            print("Font:", font_name, file=sys.stderr)
             print("Trying to generate same text again.", file=sys.stderr)
             print("---", file=sys.stderr)
             text_generation_failures += 1
@@ -159,14 +159,14 @@ def generator(config, content, index, fonts, backgrounds, args,
             manifest_row['textgroundtruth'] = image_name + '_no_effect.png'
 
         try:
-            result = effects_helper.apply_effects(text_img, font, background,
+            result = effects_helper.apply_effects(text_img, face, background,
                                                   config)
         except Exception:
             traceback.print_exc()
             print("---", file=sys.stderr)
             print("There was an error during applying effects on image number", (index), file=sys.stderr)
             print("Text:", content[0][:30], "...", file=sys.stderr)
-            print("Font:", font, file=sys.stderr)
+            print("Font:", font_name, file=sys.stderr)
             print("Trying to generate same text again.", file=sys.stderr)
             print("---", file=sys.stderr)
 
@@ -177,7 +177,7 @@ def generator(config, content, index, fonts, backgrounds, args,
         content = new_content
 
         manifest_row['image'] = image_name + '.png'
-        manifest_row['font'] = font
+        manifest_row['font'] = font_name.name()
         path = config['Common']['outputs'] + image_name
 
         # image_names.append(image_name + ".png")
@@ -271,7 +271,7 @@ def main():
         for i in range(args.workers):
             pcs.append(Process(target=generator,
                                args=(config, copy.deepcopy(content), index,
-                                     fonts, backgrounds, args,
+                                     copy.deepcopy(fonts), backgrounds, args,
                                      manifest_wrtr, i)))
             pcs[-1].start()
 
