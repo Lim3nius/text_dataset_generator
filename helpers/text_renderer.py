@@ -67,7 +67,7 @@ def _calculate_bounding_box(face, text, config):
             space_counter += 1
             previous = 0
 
-        else :
+        else:
             angle = 0
             delta = 0
             try:
@@ -407,9 +407,12 @@ def _calculate_font_size(face, config):
     text = "abcdefghijklmnopqrstuvwxyz"
     height_epsilon = 2
 
+    pseudo_low = 100
+    pseudo_high = 5 * 10**3
+    font_size = (pseudo_high + pseudo_low) // 2
     face.set_char_size(font_size)
 
-    _, height, _= _calculate_bounding_box(face, text, config)
+    _, height, _ = _calculate_bounding_box(face, text, config)
 
     target_height = config["Page"]["lineheight"]
     lower_bound = target_height - height_epsilon
@@ -417,9 +420,11 @@ def _calculate_font_size(face, config):
 
     while not (lower_bound <= height <= upper_bound):
         if height < target_height:
-            font_size += 1
+            pseudo_low = font_size
         else:
-            font_size -= 1
+            pseudo_high = font_size
+
+        font_size = (pseudo_high + pseudo_low) // 2
 
         face.set_char_size(font_size)
         _, height, _ = _calculate_bounding_box(face, text, config)
