@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import random
 import traceback
 import copy
 import argparse
@@ -177,7 +176,7 @@ def generator(config, content, index, fonts, backgrounds, args,
         content = new_content
 
         manifest_row['image'] = image_name + '.png'
-        manifest_row['font'] = font_name.name()
+        manifest_row['font'] = font_name
         path = config['Common']['outputs'] + image_name
 
         # image_names.append(image_name + ".png")

@@ -29,7 +29,7 @@ def get_random_part_of_texture(
         width: int, height: int, texture: np.array) -> np.array:
     texture_height, texture_width, _ = texture.shape
 
-    pos_height_range = texture_height - width
+    pos_height_range = texture_height - height
     pos_width_range = texture_width - width
 
     if pos_height_range < 0 or pos_width_range < 0:
