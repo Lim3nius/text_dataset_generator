@@ -151,3 +151,7 @@ def load_fonts(dir_name: str) -> LazyLoader:
         fonts.extend(list(map(lambda e: e.as_posix(), p.glob('*.'+ext))))
 
     return LazyLoader(fonts, lambda f: Face(f))
+
+
+def load_font(path: str) -> Face:
+    return Face(path)

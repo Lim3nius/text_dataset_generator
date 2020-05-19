@@ -63,7 +63,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.ini',
                         help='Path to the configuration file. If not provided'
-                        '"config.ini" in working directory will be used')
+                        ' "config.ini" in working directory will be used')
     parser.add_argument('-c', '--count', type=int, default=10**6,
                         help='Number of images to generate')
     parser.add_argument('-w', '--workers', default=1, type=int,
@@ -71,9 +71,12 @@ def parse_arguments():
     parser.add_argument("-l", "--log-level", default='info', type=str,
                         choices=['debug', 'info', 'warning', 'error'],
                         help="Level of logging")
-    parser.add_argument("--prefix", default=None, type=str,
+    parser.add_argument('--prefix', default=None, type=str,
                         help=("Prefix for newly generated images."
                               "Config has higer priority"))
+
+    parser.add_argument('--font', type=str, default=None,
+                        help='Specific font to be used')
 
     sp = parser.add_subparsers(help="sub command")
     pb = sp.add_parser("baseline", help="foo")
@@ -209,12 +212,16 @@ def generator(config, content, index, fonts, backgrounds, args,
 
 class Storage:
     """docstring for ClassName"""
-    def __init__(self, config):
+    def __init__(self, config, font=None):
         self.config = config
 
         self.backgrounds = file_helper.load_images(
             config['Common']['backgrounds'])
-        self.fonts = file_helper.load_fonts(config['Common']['fonts'])
+        if font:
+            self.fonts = {font: file_helper.load_font(font)}
+        else:
+            self.fonts = file_helper.load_fonts(config['Common']['fonts'])
+
 
 
 def main():
@@ -225,7 +232,7 @@ def main():
     config = parse_configuration(args.config)
     log.info('Configuration parsed')
     prefix = args.prefix if args.prefix else config['Common']['imageprefix']
-    storage = Storage(config)
+    storage = Storage(config, args.font)
     log.debug('Storage loaded')
 
     backgrounds = storage.backgrounds
@@ -241,6 +248,7 @@ def main():
     content = modify_content(content, config)
 
     file_helper.create_directory_if_not_exists(config['Common']['outputs'])
+    file_helper.create_directory_if_not_exists(config['Common']['tempdir'])
 
     config["FontSizes"] = {}
     config["OriginalText"] = copy.deepcopy(content)

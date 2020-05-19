@@ -2,8 +2,15 @@ from __future__ import print_function
 from freetype import Face, Matrix, Vector
 import numpy as np
 import math
+from cachetools import cached, LRUCache
+from pathlib import Path
+from typing import Dict, Tuple
 
-from helpers import file_helper, image_helper
+# from helpers import file_helper, image_helper
+
+from logging import getLogger
+
+log = getLogger()
 
 
 def _recalculate_spaces(width, target_width, number_of_spaces, actual_space):
@@ -403,7 +410,6 @@ def _render_paragraph(face, text, config, max_lines=float('inf')):
 
 
 def _calculate_font_size(face, config):
-    font_size = 2000
     text = "abcdefghijklmnopqrstuvwxyz"
     height_epsilon = 2
 
@@ -468,3 +474,143 @@ def _remove_trailing_space(img):
         top += 1
 
     return img, (top, bottom, left, right)
+
+
+def error_tolerance(count: int):
+    def wrap(f):
+        def inner(*arg, **kwargs):
+            res = None
+            exception = None
+
+            for i in range(count):
+                try:
+                    res = f(*arg, **kwargs)
+                except Exception as e:
+                    log.debug(f'{i}. try failed')
+                    exception = e
+                else:
+                    return res
+            raise exception  # Wasn't able to compute result
+        return inner
+    return wrap
+
+
+class FontPathError(Exception):
+    pass
+
+
+class Renderer:
+    """
+    Renderer class will be main object for rendering characters
+    It's only purpose is to render render given character in given font
+    """
+
+    def __init__(self, faces: Dict[str, Face]):
+        self.faces = faces
+
+    @cached(cache={})
+    def get_face(self, font: str) -> Face:
+        """get_face method used by renderer for minimazing I/O access
+        :font: string representing path to font
+        :returns: face object for given font
+
+        """
+
+        p = Path(font)
+        if p.exists():
+            return Face(p)
+        else:
+            raise FontPathError('Non existing path')
+
+    def calculate_bbox(self, face: Face, text: str) -> Tuple[int, int, int]:
+        slot = face.glyph
+        width, height, baseline, previous = 0, 0, 0, 0
+        # Compute baseline + height
+        for c in text:
+            face.load_char(c)
+            bitmap = slot.bitmap
+            height = max(height,
+                         bitmap.rows + max(0, -(slot.bitmap_top-bitmap.rows)))
+            baseline = max(baseline, max(0, -(slot.bitmap_top-bitmap.rows)))
+            kerning = face.get_kerning(previous, c)
+            width += (slot.advance.x >> 6) + (kerning.x >> 6)
+            previous = c
+
+        return (width, height, baseline)
+
+    @cached(cache=LRUCache(maxsize=256))
+    def calculate_font_size(self, font: str, line_height: int) -> int:
+        face = self.faces[font]
+        # text = "abcdefghijklmnopqrstuvwxyz"
+        text = 'TGHfgqěščřžýáíĚŠČŘŽÝÁÍ'
+        height_epsilon = 2
+
+        pseudo_low = 100
+        pseudo_high = 5 * 10**3
+        font_size = (pseudo_high + pseudo_low) // 2
+        face.set_char_size(font_size)
+
+        _, height, _ = self.calculate_bbox(face, text)
+
+        target_height = line_height
+        lower_bound = target_height - height_epsilon
+        upper_bound = target_height + height_epsilon
+
+        while not (lower_bound <= height <= upper_bound):
+            if height < target_height:
+                pseudo_low = font_size
+            else:
+                pseudo_high = font_size
+
+            font_size = (pseudo_high + pseudo_low) // 2
+
+            face.set_char_size(font_size)
+            _, height, _ = self.calculate_bbox(face, text)
+
+        return font_size
+
+    @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
+    @error_tolerance(5)
+    def draw(self, text: str, font: str, font_size: int) -> np.array:
+        """draw returns numpy array containing given text in specified
+        font and with given font_size
+
+        :text: text to be rendered
+        :font: path to font, which should be used to open
+        :font_size: font_size in which character should be rendered
+        :returns: numpy array containing bitmap of rendered image
+        """
+
+        # face = Face(font)
+        face = self.faces[font]
+        face.set_char_size(font_size)
+        slot = face.glyph
+        width, height, baseline = self.calculate_bbox(face, text)
+
+        Z = np.zeros((height, width), dtype=np.ubyte)
+
+        # Draw text
+        x, y = 0, 0
+        previous = 0
+        for c in text:
+            face.load_char(c)
+            bitmap = slot.bitmap
+            top = slot.bitmap_top
+            # left = slot.bitmap_left
+            w, h = bitmap.width, bitmap.rows
+            y = height-baseline-top
+            y = 0 if y < 0 else y
+            kerning = face.get_kerning(previous, c)
+            x += (kerning.x >> 6)
+            tmp = np.array(
+                bitmap.buffer, dtype='ubyte').reshape(h, w)
+
+            Z[y:y+h, x:x+w] += tmp
+            x += (slot.advance.x >> 6)
+            previous = c
+
+        Z = 255 - Z  # invert colors
+        # transform matrix to ndarray representing RGB image
+        Z = np.repeat(Z.reshape(Z.shape + (1,)), 3, axis=2)
+
+        return Z
