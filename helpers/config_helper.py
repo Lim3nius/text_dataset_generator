@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 
-import configparser
+from configparser import ConfigParser
+from collections import defaultdict
+
+
+def none_factory(): return None
+
 
 def parse_configuration(config_path):
-    config_dict = {}
-    config = configparser.ConfigParser()
+    config_dict = defaultdict(none_factory)
+    config = ConfigParser()
     config.read(config_path)
     for section in config.sections():
         config_dict[section] = _parse_configuration_section(config, section)
@@ -13,7 +18,7 @@ def parse_configuration(config_path):
 
 
 def _parse_configuration_section(config, section):
-    section_dict = {}
+    section_dict = defaultdict(none_factory)
     options = config.options(section)
     for option in options:
         try:
