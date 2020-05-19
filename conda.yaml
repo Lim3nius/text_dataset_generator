@@ -7,6 +7,7 @@ dependencies:
   - blas=1.0=mkl
   - bzip2=1.0.8=h7b6447c_0
   - ca-certificates=2020.1.1=0
+  - cachetools=3.1.1=py_0
   - cairo=1.14.12=h8948797_3
   - certifi=2020.4.5.1=py37_0
   - decorator=4.4.2=py_0
@@ -41,12 +42,14 @@ dependencies:
   - libxcb=1.13=h1bed415_1
   - libxml2=2.9.9=hea5a465_1
   - libxslt=1.1.33=h7d1a2b0_0
+  - llvmlite=0.32.0=py37hd408876_0
   - lxml=4.5.0=py37hefd8a0e_0
   - mkl=2020.0=166
   - mkl-service=2.3.0=py37he904b0f_0
   - mkl_fft=1.0.15=py37ha843d7b_0
   - mkl_random=1.1.0=py37hd6b4f25_0
   - ncurses=6.2=he6710b0_0
+  - numba=0.49.0=py37h0573a6f_0
   - numpy=1.18.1=py37h4f9e942_0
   - numpy-base=1.18.1=py37hde5b4d6_1
   - olefile=0.46=py_0
@@ -66,9 +69,11 @@ dependencies:
   - pygments=2.6.1=py_0
   - python=3.7.7=hcf32534_0_cpython
   - readline=8.0=h7b6447c_0
+  - scipy=1.4.1=py37h0b6359f_0
   - setuptools=46.1.3=py37_0
   - six=1.14.0=py37_0
   - sqlite=3.31.1=h62c20be_1
+  - tbb=2020.0=hfd86e86_0
   - tk=8.6.8=hbc83047_0
   - traitlets=4.3.3=py37_0
   - wcwidth=0.1.9=py_0
