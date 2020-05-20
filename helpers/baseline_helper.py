@@ -7,36 +7,23 @@ Description: TODO
 """
 
 import sys
-import traceback
 from logging import getLogger
 from typing import List, Tuple
 import numpy as np
+from PIL import Image
 
 from sympy import Line, Point, solve, symbols
 
 from pero_ocr.document_ocr.layout import PageLayout, TextLine
 from helpers.text_renderer import Renderer
-import helpers.image_helper as imgh
+# import helpers.image_helper as imgh
 import helpers.presentation_helper as presh
 from helpers.logger import log_function_call
-from PIL import Image
+from helpers.misc import exit_on_exception
 
 log = getLogger()
 
 Point = Tuple[int, int]
-
-
-def on_exception_exit(code: int):
-    def wrapper(f):
-        def inner(*args, **kwargs):
-            try:
-                f(*args, **kwargs)
-            except Exception as e:
-                log.error(f'Caught exception: {e}')
-                traceback.print_exc()
-                sys.exit(code)
-        return inner
-    return wrapper
 
 
 class Compositor:
@@ -175,7 +162,7 @@ def rerender_page(page: PageLayout, renderer: Renderer,
     return background
 
 
-@on_exception_exit(1)
+@exit_on_exception(1)
 def main(path: str, config, storage):
     """
     main handler for generating images from baselines
@@ -186,23 +173,24 @@ def main(path: str, config, storage):
     viewer = presh.ImageViewer(config['Common']['viewer'],
                                config['Common']['tempdir'])
 
-    _, background = storage.backgrounds.random_pair()
-    log.warn('Background loaded')
+    background_name, background = storage.backgrounds.random_pair()
+    log.info(f'Background "{background_name}" loaded')
 
     pheight, pwidth = page.page_size
-    log.info(f'Background dimensions {background.shape}')
+    log.debug(f'Background dimensions {background.shape}')
     background = presh.ensure_image_shape(background, (pheight, pwidth))
+    log.debug(f'Background dimensions after shape change {background.shape}')
 
     font = list(storage.fonts.items())[0][0]
     log.debug(f'Using font: {font}')
     rerender_page(page, renderer, font, np.copy(background))
 
     img = presh.np_array_to_img(background)
-    log.info(f'Background dimensions {img.size}')
+    log.debug(f'Background dimensions {img.size}')
 
     img = show_baselines(page, img)
 
-    log.info(f'Result image dimensions -> {img.size}')
+    log.debug(f'Result image dimensions -> {img.size}')
     background = path.split('.')[0] + '.jpg'
     background = presh.load_image(background)
 

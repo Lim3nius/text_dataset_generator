@@ -20,11 +20,13 @@ import numpy as np
 
 from helpers.logger import log_function_call
 from helpers.file_helper import write_image
+from helpers.misc import debug_on_exception
 
 Point = Tuple[int, int]
 log = getLogger()
 
 
+@debug_on_exception([Exception])
 def compare_images(img1, img2, alpha):
     return Image.blend(img1, img2, alpha)
 
@@ -102,10 +104,10 @@ def ensure_image_shape(img, shape):
 
         if diff > height:
             log.warn('risky height increase')
-            mult = t_height // height
-            diff = t_height % height
+            mult = (t_height - height) // height
+            diff = (t_height - height) % height
             for _ in range(mult):
-                img = np.concatenate((img, img), axis=0)
+                img = np.concatenate((img, img[:height]), axis=0)
 
         img = np.concatenate((img, img[:diff]), axis=0)
 
@@ -117,10 +119,10 @@ def ensure_image_shape(img, shape):
         diff = t_width - width
         if diff > width:
             log.warn('Risky width increase')
-            mult = t_width // width
-            diff = t_width % width
+            mult = (t_width - width) // width
+            diff = (t_width - width) % width
             for _ in range(mult):
-                img = np.concatenate((img, img), axis=1)
+                img = np.concatenate((img, img[:, :width]), axis=1)
 
         img = np.concatenate((img, img[:, :diff]), axis=1)
 
