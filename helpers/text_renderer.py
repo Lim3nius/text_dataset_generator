@@ -9,6 +9,7 @@ from typing import Dict, Tuple
 # from helpers import file_helper, image_helper
 
 from logging import getLogger
+from helpers.misc import debug_on_exception
 
 log = getLogger()
 
@@ -495,6 +496,12 @@ def error_tolerance(count: int):
     return wrap
 
 
+def render_to_terminal(bitmap, width, height):
+    bitmap = list(map(lambda e: ' ' if e > 0 else '#', bitmap))
+    for i in range(0, len(bitmap), width):
+        print(''.join(bitmap[i:i+width]))
+
+
 class FontPathError(Exception):
     pass
 
@@ -531,18 +538,26 @@ class Renderer:
 
         slot = face.glyph
         width, height, baseline, previous = 0, 0, 0, 0
+        total_top_height, total_bottom_height = 0, 0
         # Compute baseline + height
         for c in text:
             face.load_char(c)
             bitmap = slot.bitmap
-            height = max(height,
-                         bitmap.rows + max(0, -(slot.bitmap_top-bitmap.rows)))
-            baseline = max(baseline, max(0, -(slot.bitmap_top-bitmap.rows)))
+            total_top_height = max(total_top_height, slot.bitmap_top)
+            total_bottom_height = max(total_bottom_height,
+                                      bitmap.rows - slot.bitmap_top)
+
             kerning = face.get_kerning(previous, c)
             width += (slot.advance.x >> 6) + (kerning.x >> 6)
             previous = c
 
-        return (width, height, baseline)
+        height = total_top_height + total_bottom_height
+        baseline = height - total_bottom_height
+
+        # +2 because of faulty width computation
+        # works fine for all tested fonts since kerning is usually -1
+        # and only beginning and end can cause problems
+        return (width + 2, height, baseline)
 
     @cached(cache=LRUCache(maxsize=256))
     def calculate_font_size(self, font: str, target_height: int,
@@ -587,7 +602,8 @@ class Renderer:
         return font_size
 
     @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
-    @error_tolerance(5)
+    # @error_tolerance(5)
+    @debug_on_exception([Exception])
     def draw(self, text: str, font: str, font_size: int) -> np.array:
         """draw returns numpy array containing given text in specified
         font and with given font_size
@@ -603,6 +619,8 @@ class Renderer:
         face.set_char_size(font_size)
         slot = face.glyph
         width, height, baseline = self.calculate_bbox(face, text)
+        log.debug(f'Calculated width: {width}, height: {height},'
+                  f'baseline: {baseline}')
 
         Z = np.zeros((height, width), dtype=np.ubyte)
 
@@ -615,13 +633,15 @@ class Renderer:
             top = slot.bitmap_top
             # left = slot.bitmap_left
             w, h = bitmap.width, bitmap.rows
-            y = height-baseline-top
+            y = baseline-top
             y = 0 if y < 0 else y
             kerning = face.get_kerning(previous, c)
             x += (kerning.x >> 6)
             tmp = np.array(
                 bitmap.buffer, dtype='ubyte').reshape(h, w)
 
+            log.debug(f'Rendering "{c}", w: {w}, h: {h}, top: {top}')
+            log.debug(f'Placing character at y: {y} -> {y+h}')
             Z[y:y+h, x:x+w] += tmp
             x += (slot.advance.x >> 6)
             previous = c

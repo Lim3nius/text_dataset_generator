@@ -238,6 +238,8 @@ def main():
     backgrounds = storage.backgrounds
     fonts = storage.fonts
 
+    file_helper.create_directory_if_not_exists(config['Common']['outputs'])
+    file_helper.create_directory_if_not_exists(config['Common']['tempdir'])
     try:
         args.func(args.path, config, storage)
     except Exception:
@@ -247,8 +249,6 @@ def main():
                                     config['Text']['words'])
     content = modify_content(content, config)
 
-    file_helper.create_directory_if_not_exists(config['Common']['outputs'])
-    file_helper.create_directory_if_not_exists(config['Common']['tempdir'])
 
     config["FontSizes"] = {}
     config["OriginalText"] = copy.deepcopy(content)

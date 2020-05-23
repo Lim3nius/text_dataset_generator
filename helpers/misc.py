@@ -33,6 +33,7 @@ def debug_on_exception(exceptions: List[Exception]):
             except Exception as e:
                 for typ in exceptions:
                     if isinstance(e, typ):
+                        traceback.print_exc()
                         breakpoint()
                         res = func(*args, **kwargs)
                         break
