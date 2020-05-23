@@ -14,16 +14,16 @@ from PIL import Image
 
 from sympy import Line, Point, solve, symbols
 
-from pero_ocr.document_ocr.layout import PageLayout, TextLine
+from pero_ocr.document_ocr.layout import PageLayout
 from helpers.text_renderer import Renderer
 # import helpers.image_helper as imgh
 import helpers.presentation_helper as presh
-from helpers.logger import log_function_call
+# from helpers.logger import log_function_call
 from helpers.misc import exit_on_exception
 
 log = getLogger()
 
-Point = Tuple[int, int]
+# Point = Tuple[int, int]
 
 
 class Compositor:
@@ -124,7 +124,7 @@ def show_baselines(page: PageLayout, img: Image.Image) -> Image.Image:
     return img
 
 
-@presh.view_result_decorator('/tmp', 'feh')
+@presh.view_result_decorator('/tmp/tdg/', 'feh')
 def rerender_page(page: PageLayout, renderer: Renderer,
                   font: str, background: np.array) -> np.array:
     pheight, pwidth = page.page_size
@@ -134,20 +134,29 @@ def rerender_page(page: PageLayout, renderer: Renderer,
     c = Compositor(None)
 
     for r in page.regions:
+
+        # assuming all TextLines in region are of same font size
+        longest_line = max(r.lines, key=lambda e: len(e.transcription))
+        outer_bbox = calculate_polygon_outer_bbox(longest_line.polygon)
+        line_height = calculate_inner_bbox_height(longest_line.polygon)
+        region_font_size = renderer.calculate_font_size(
+            font, line_height, outer_bbox[1][0] - outer_bbox[0][0])
+
         for l in r.lines:
             text = l.transcription
 
             poly = calculate_polygon_outer_bbox(l.polygon)
             line_height = calculate_inner_bbox_height(l.polygon)
             log.info(f'Line height: {line_height}')
-            font_size = renderer.calculate_font_size(font, line_height)
+            # font_size = renderer.calculate_font_size(font, line_height)
             log.debug(f'Rendering text: "{text}"')
-            text_img = renderer.draw(text, font, font_size)
+            text_img = renderer.draw(text, font, region_font_size)
             height, width = text_img.shape[:2]
             top_left = poly[0]
             line_width = poly[1][0] - poly[0][0]
+
             if width > line_width:
-                log.info(f'Cropping: {width} > {line_width}')
+                log.error(f'Cropping: {width} > {line_width}')
                 text_img = text_img[:, :line_width, :]
                 width = line_width
 

@@ -513,7 +513,6 @@ class Renderer:
         """get_face method used by renderer for minimazing I/O access
         :font: string representing path to font
         :returns: face object for given font
-
         """
 
         p = Path(font)
@@ -523,6 +522,13 @@ class Renderer:
             raise FontPathError('Non existing path')
 
     def calculate_bbox(self, face: Face, text: str) -> Tuple[int, int, int]:
+        '''
+        calculate_bbox calculates bounding box of given text rendered with
+        specified face (font + set font_size)
+
+        :returns: tuple containing width, height, baseline
+        '''
+
         slot = face.glyph
         width, height, baseline, previous = 0, 0, 0, 0
         # Compute baseline + height
@@ -539,24 +545,35 @@ class Renderer:
         return (width, height, baseline)
 
     @cached(cache=LRUCache(maxsize=256))
-    def calculate_font_size(self, font: str, line_height: int) -> int:
+    def calculate_font_size(self, font: str, target_height: int,
+                            target_length: int = None) -> int:
         face = self.faces[font]
         # text = "abcdefghijklmnopqrstuvwxyz"
         text = 'TGHfgqěščřžýáíĚŠČŘŽÝÁÍ'
-        height_epsilon = 2
+        height_epsilon, width_epsilon = 2, 10
 
         pseudo_low = 100
         pseudo_high = 5 * 10**3
         font_size = (pseudo_high + pseudo_low) // 2
         face.set_char_size(font_size)
 
-        _, height, _ = self.calculate_bbox(face, text)
+        width, height, _ = self.calculate_bbox(face, text)
 
-        target_height = line_height
         lower_bound = target_height - height_epsilon
         upper_bound = target_height + height_epsilon
+        lower_length = target_length - width_epsilon
 
-        while not (lower_bound <= height <= upper_bound):
+        def height_cond(height):
+            return (lower_bound <= height <= upper_bound)
+
+        if target_length:
+            def width_cond(width):
+                return (lower_length <= width <= target_length)
+        else:
+            def width_cond(_):
+                return True
+
+        while not height_cond(height) and not width_cond(width):
             if height < target_height:
                 pseudo_low = font_size
             else:
@@ -565,7 +582,7 @@ class Renderer:
             font_size = (pseudo_high + pseudo_low) // 2
 
             face.set_char_size(font_size)
-            _, height, _ = self.calculate_bbox(face, text)
+            width, height, _ = self.calculate_bbox(face, text)
 
         return font_size
 
