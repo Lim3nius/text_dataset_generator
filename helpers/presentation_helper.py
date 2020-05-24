@@ -11,7 +11,6 @@ from typing import List, Tuple
 from subprocess import run
 from random import choice
 from string import ascii_letters
-from functools import wraps
 
 from PIL import Image
 from PIL import ImageColor as Color
@@ -71,7 +70,7 @@ def write_polygon(img: Image.Image, color_str: str,
 @log_function_call('debug')
 def write_rectangle(img: Image.Image, color_str: str,
                     points: List[Point]) -> Image.Image:
-    log.debug(f'Rendering rectangle')
+    log.debug('Rendering rectangle')
     color = Color.getrgb(color_str)
     img = img.copy()
     imc = Draw(img)
@@ -133,11 +132,13 @@ def view_result_decorator(save_location: str, viewer: str):
     def wrapper(f):
         def inner(*args, **kwargs):
             res = f(*args, **kwargs)
+            global global_viewer
 
             path = ''
             if isinstance(res, Image.Image):
                 fname = random_string(9)
-                path = (save_location + '/' + fname + '.png')
+                path = (save_location + '/' + fname +
+                        '.' + global_viewer.img_format)
                 if res.mode != 'RGBA':
                     img = res.convert('RGBA')
                     img.save(path)
@@ -146,14 +147,15 @@ def view_result_decorator(save_location: str, viewer: str):
             elif (isinstance(res, np.ndarray) and len(res.shape) == 3
                   and res.shape[-1] == 3):
                 fname = random_string(9)
-                path = (save_location + '/' + fname + '.png')
+                path = (save_location + '/' + fname +
+                        '.' + global_viewer.img_format)
                 write_image(res, path)
 
             else:
                 log.warn('Nothing to display')
                 return res
 
-            view_file(viewer, path)
+            view_file(global_viewer.viewer, path)
             return res
         return inner
     return wrapper
@@ -174,15 +176,36 @@ def view_file(viewer: str, file_path: str):
 
 class ImageViewer:
     """docstring for ClassName"""
-    def __init__(self, viewer: str, tmp_dir: str):
+    def __init__(self, viewer: str, tmp_dir: str, img_format: str):
         self.viewer = viewer
         self.tmp_dir = tmp_dir
+        self.img_format = img_format
 
-    def view_img(self, img: Image.Image, format='png'):
+    def view_img(self, img: Image.Image):
         if img.mode != 'RGBA':
             img = img.convert('RGBA')
 
-        path = self.tmp_dir + '/' + random_string(10) + '.' + format
+        path = self.tmp_dir + '/' + random_string(10) + '.' + self.img_format
         img.save(path)
 
         view_file(self.viewer, path)
+
+
+global_viewer = None
+
+
+def init_global_viewer(*args, **kwargs) -> ImageViewer:
+    '''
+    This functions inicializes global_viewer, which is further on used for
+    rendering images, and which variables are then used in
+    'view_result_decorator'
+
+    ! This function has to be called atleast once !
+
+    :params: as for ImageViewer
+    :returns: instance of global_viewer
+    '''
+
+    global global_viewer
+    global_viewer = ImageViewer(*args, **kwargs)
+    return global_viewer

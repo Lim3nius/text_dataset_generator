@@ -3,7 +3,7 @@ File: baseline_helper.py
 Author: Tomas Lessy
 Email: lessy.mot@gmail.com
 Github: https://github.com/lim3nius
-Description: TODO
+Description: Main baseline rendering module
 """
 
 import sys
@@ -166,11 +166,8 @@ def rerender_page(page: PageLayout, renderer: Renderer,
                 text_img = text_img[:, :line_width, :]
                 width = line_width
 
-            # x, y = top_left
             log.debug(f'top left: {top_left}')
             log.debug(f'text image shape {text_img.shape}')
-            # place on to background with nice alpha channel
-            # background[y:y+height, x:x+width, :] = text_img
             c.place_text_on_background(text_img, background, top_left)
 
     log.info('Page rendering finished')
@@ -185,8 +182,9 @@ def main(path: str, config, storage):
 
     page = load_page(path)
     renderer = Renderer(storage.fonts)
-    viewer = presh.ImageViewer(config['Common']['viewer'],
-                               config['Common']['tempdir'])
+    viewer = presh.init_global_viewer(config['Common']['viewer'],
+                                      config['Common']['tempdir'],
+                                      config['Common']['imageformat'])
 
     background_name, background = storage.backgrounds.random_pair()
     log.info(f'Background "{background_name}" loaded')
