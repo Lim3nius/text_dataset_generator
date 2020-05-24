@@ -528,6 +528,7 @@ class Renderer:
         else:
             raise FontPathError('Non existing path')
 
+    @debug_on_exception(None)
     def render_line(self,  text: str, font: str,
                     font_size: int, line_width: int) -> np.array:
         face = self.faces[font]
@@ -535,6 +536,10 @@ class Renderer:
         width, height, baseline = self.calculate_bbox(face, text)
         log.debug(f'Calculated width: {width}, height: {height},'
                   f'baseline: {baseline}')
+
+        if line_width <= 1.1 * width:
+            img, _ = self.draw(text, font, font_size)
+            return img
 
         words = text.split(' ')
         spaces = len(words) - 1
