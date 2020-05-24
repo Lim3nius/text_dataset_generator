@@ -147,7 +147,7 @@ def rerender_page(page: PageLayout, renderer: Renderer,
 
             poly = calculate_polygon_outer_bbox(l.polygon)
             line_height = calculate_inner_bbox_height(l.polygon)
-            log.info(f'Line height: {line_height}')
+            log.debug(f'Line height: {line_height}')
             # font_size = renderer.calculate_font_size(font, line_height)
             log.debug(f'Rendering text: "{text}"')
             line_width = poly[1][0] - poly[0][0]
@@ -158,13 +158,13 @@ def rerender_page(page: PageLayout, renderer: Renderer,
             top_left = poly[0]
 
             if width > line_width:
-                log.error(f'Cropping: {width} > {line_width}')
+                log.warn(f'Cropping: {width} > {line_width}')
                 text_img = text_img[:, :line_width, :]
                 width = line_width
 
             x, y = top_left
-            log.info(f'top left: {top_left}')
-            log.info(f'text image shape {text_img.shape}')
+            log.debug(f'top left: {top_left}')
+            log.debug(f'text image shape {text_img.shape}')
             # place on to background with nice alpha channel
             # background[y:y+height, x:x+width, :] = text_img
             c.place_text_on_background(text_img, background, top_left)
@@ -194,7 +194,9 @@ def main(path: str, config, storage):
 
     font = list(storage.fonts.items())[0][0]
     log.debug(f'Using font: {font}')
-    rerender_page(page, renderer, font, np.copy(background))
+    gen_page = rerender_page(page, renderer, font, np.copy(background))
+    gen_page = show_baselines(page, presh.np_array_to_img(gen_page))
+    viewer.view_img(gen_page)
 
     img = presh.np_array_to_img(background)
     log.debug(f'Background dimensions {img.size}')

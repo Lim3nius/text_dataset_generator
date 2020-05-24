@@ -537,12 +537,13 @@ class Renderer:
         log.debug(f'Calculated width: {width}, height: {height},'
                   f'baseline: {baseline}')
 
-        if line_width <= 1.1 * width:
+        words = text.split(' ')
+        spaces = len(words) - 1
+
+        if spaces == 0 or line_width <= 1.1 * width:
             img, _ = self.draw(text, font, font_size)
             return img
 
-        words = text.split(' ')
-        spaces = len(words) - 1
         words_images = []
         baselines = []
         width_acc = 0
