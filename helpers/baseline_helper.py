@@ -150,10 +150,12 @@ def rerender_page(page: PageLayout, renderer: Renderer,
             log.info(f'Line height: {line_height}')
             # font_size = renderer.calculate_font_size(font, line_height)
             log.debug(f'Rendering text: "{text}"')
-            text_img = renderer.draw(text, font, region_font_size)
+            line_width = poly[1][0] - poly[0][0]
+            text_img = renderer.render_line(
+                text, font, region_font_size, line_width)
+            # text_img = renderer.draw(text, font, region_font_size)
             height, width = text_img.shape[:2]
             top_left = poly[0]
-            line_width = poly[1][0] - poly[0][0]
 
             if width > line_width:
                 log.error(f'Cropping: {width} > {line_width}')

@@ -528,6 +528,37 @@ class Renderer:
         else:
             raise FontPathError('Non existing path')
 
+    def render_line(self,  text: str, font: str,
+                    font_size: int, line_width: int) -> np.array:
+        face = self.faces[font]
+        face.set_char_size(font_size)
+        width, height, baseline = self.calculate_bbox(face, text)
+        log.debug(f'Calculated width: {width}, height: {height},'
+                  f'baseline: {baseline}')
+
+        words = text.split(' ')
+        spaces = len(words) - 1
+        words_images = []
+        baselines = []
+        width_acc = 0
+
+        for w in words:
+            w_img, b_line = self.draw(w, font, font_size)
+            width_acc += w_img.shape[1]
+            words_images.append(w_img)
+            baselines.append(b_line)
+
+        space_width = (line_width - width_acc) // spaces
+        line = np.full((height, line_width, 3), 255, dtype=np.ubyte)
+        ruler = 0
+
+        for (img, bline) in zip(words_images, baselines):
+            height, width = img.shape[:2]
+            h = baseline - bline
+            line[h:h+height, ruler:ruler+width, :] = img
+            ruler += width + space_width
+        return line
+
     def calculate_bbox(self, face: Face, text: str) -> Tuple[int, int, int]:
         '''
         calculate_bbox calculates bounding box of given text rendered with
@@ -602,7 +633,6 @@ class Renderer:
         return font_size
 
     @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
-    # @error_tolerance(5)
     @debug_on_exception([Exception])
     def draw(self, text: str, font: str, font_size: int) -> np.array:
         """draw returns numpy array containing given text in specified
@@ -634,7 +664,6 @@ class Renderer:
             # left = slot.bitmap_left
             w, h = bitmap.width, bitmap.rows
             y = baseline-top
-            y = 0 if y < 0 else y
             kerning = face.get_kerning(previous, c)
             x += (kerning.x >> 6)
             tmp = np.array(
@@ -650,4 +679,4 @@ class Renderer:
         # transform matrix to ndarray representing RGB image
         Z = np.repeat(Z.reshape(Z.shape + (1,)), 3, axis=2)
 
-        return Z
+        return (Z, baseline)
