@@ -613,7 +613,7 @@ class Renderer:
         face = self.faces[font]
         # text = "abcdefghijklmnopqrstuvwxyz"
         text = 'TGHfgqěščřžýáíĚŠČŘŽÝÁÍ'
-        height_epsilon, width_epsilon = 2, 10
+        height_epsilon, width_epsilon = 0, 10
 
         pseudo_low = 100
         pseudo_high = 5 * 10**3
@@ -624,12 +624,13 @@ class Renderer:
 
         lower_bound = target_height - height_epsilon
         upper_bound = target_height + height_epsilon
-        lower_length = target_length - width_epsilon
 
         def height_cond(height):
             return (lower_bound <= height <= upper_bound)
 
         if target_length:
+            lower_length = target_length - width_epsilon
+
             def width_cond(width):
                 return (lower_length <= width <= target_length)
         else:

@@ -147,11 +147,12 @@ def rerender_page(page: PageLayout, renderer: Renderer,
             text = l.transcription
 
             poly = calculate_polygon_outer_bbox(l.polygon)
+            line_width = poly[1][0] - poly[0][0]
             line_height = calculate_inner_bbox_height(l.polygon)
             log.debug(f'Line height: {line_height}')
-            # font_size = renderer.calculate_font_size(font, line_height)
+            # font_size = renderer.calculate_font_size(
+            #     font, line_height, line_width)
             log.debug(f'Rendering text: "{text}"')
-            line_width = poly[1][0] - poly[0][0]
             text_img, baseline = renderer.render_line(
                 text, font, region_font_size, line_width)
             # text_img = renderer.draw(text, font, region_font_size)
