@@ -9,6 +9,7 @@ Description: TODO
 import sys
 from logging import getLogger
 from typing import List, Tuple
+from copy import deepcopy
 import numpy as np
 from PIL import Image
 
@@ -151,18 +152,21 @@ def rerender_page(page: PageLayout, renderer: Renderer,
             # font_size = renderer.calculate_font_size(font, line_height)
             log.debug(f'Rendering text: "{text}"')
             line_width = poly[1][0] - poly[0][0]
-            text_img = renderer.render_line(
+            text_img, baseline = renderer.render_line(
                 text, font, region_font_size, line_width)
             # text_img = renderer.draw(text, font, region_font_size)
             height, width = text_img.shape[:2]
-            top_left = poly[0]
+
+            # let's say first point is baseline
+            top_left = deepcopy(l.baseline[0])
+            top_left[1] -= baseline
 
             if width > line_width:
                 log.warn(f'Cropping: {width} > {line_width}')
                 text_img = text_img[:, :line_width, :]
                 width = line_width
 
-            x, y = top_left
+            # x, y = top_left
             log.debug(f'top left: {top_left}')
             log.debug(f'text image shape {text_img.shape}')
             # place on to background with nice alpha channel

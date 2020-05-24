@@ -103,7 +103,7 @@ def ensure_image_shape(img, shape):
         diff = t_height - height
 
         if diff > height:
-            log.warn('risky height increase')
+            log.warn('Risky height increase')
             mult = (t_height - height) // height
             diff = (t_height - height) % height
             for _ in range(mult):

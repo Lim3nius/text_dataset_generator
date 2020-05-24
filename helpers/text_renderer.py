@@ -530,7 +530,19 @@ class Renderer:
 
     @debug_on_exception(None)
     def render_line(self,  text: str, font: str,
-                    font_size: int, line_width: int) -> np.array:
+                    font_size: int, line_width: int) -> Tuple[np.ndarray, int]:
+        '''
+        render line renders given line, with enlarged spaces so final text
+        width is as close to "line_width" as possible
+
+        :text: string to be rendered
+        :font: name of font which should be used
+        :font_size: size of font which is to be used
+        :line_width: optimal width of final image of text
+
+        :returns: Tuple contains np.ndarray containing img and baseline pos
+        '''
+
         face = self.faces[font]
         face.set_char_size(font_size)
         width, height, baseline = self.calculate_bbox(face, text)
@@ -541,8 +553,7 @@ class Renderer:
         spaces = len(words) - 1
 
         if spaces == 0 or line_width <= 1.1 * width:
-            img, _ = self.draw(text, font, font_size)
-            return img
+            return self.draw(text, font, font_size)
 
         words_images = []
         baselines = []
@@ -563,7 +574,7 @@ class Renderer:
             h = baseline - bline
             line[h:h+height, ruler:ruler+width, :] = img
             ruler += width + space_width
-        return line
+        return (line, baseline)
 
     def calculate_bbox(self, face: Face, text: str) -> Tuple[int, int, int]:
         '''
@@ -640,7 +651,7 @@ class Renderer:
 
     @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
     @debug_on_exception([Exception])
-    def draw(self, text: str, font: str, font_size: int) -> np.array:
+    def draw(self, text: str, font: str, font_size: int) -> np.ndarray:
         """draw returns numpy array containing given text in specified
         font and with given font_size
 
