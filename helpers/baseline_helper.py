@@ -12,6 +12,7 @@ from typing import List, Tuple
 from copy import deepcopy
 import numpy as np
 from PIL import Image
+from math import floor
 
 from sympy import Line, Point, solve, symbols
 
@@ -137,10 +138,15 @@ def rerender_page(page: PageLayout, renderer: Renderer,
 
     for r in page.regions:
 
+        if r.lines is None or len(r.lines) == 0:
+            continue
         # assuming all TextLines in region are of same font size
         longest_line = max(r.lines, key=lambda e: len(e.transcription))
         outer_bbox = calculate_polygon_outer_bbox(longest_line.polygon)
-        region_line_height = calculate_inner_bbox_height(longest_line.polygon)
+        region_line_height = floor(calculate_bbox_height(*outer_bbox) * 0.8)
+        log.info(f'For region {r.id} selected '
+                 f'longest_line: "{longest_line.transcription}"'
+                 f', with height: {region_line_height}')
         region_font_size = renderer.calculate_font_size(
             font, region_line_height,
             target_width=outer_bbox[1][0] - outer_bbox[0][0],
@@ -151,7 +157,7 @@ def rerender_page(page: PageLayout, renderer: Renderer,
 
             poly = calculate_polygon_outer_bbox(l.polygon)
             line_width = poly[1][0] - poly[0][0]
-            line_height = calculate_inner_bbox_height(l.polygon)
+            line_height = floor(calculate_bbox_height(*poly) * 0.8)
             log.debug(f'Line height: {line_height}')
 
             font_size = region_font_size
@@ -161,10 +167,25 @@ def rerender_page(page: PageLayout, renderer: Renderer,
                     font, line_height, target_width=line_width, text=text)
 
             log.debug(f'Rendering text: "{text}"')
-            text_img, baseline = renderer.render_line(
-                text, font, font_size, line_width)
-            # text_img = renderer.draw(text, font, region_font_size)
-            height, width = text_img.shape[:2]
+            # make sure that all cahracters are rendered and fits into
+            # bounding box
+            recalc = 0
+            while True:
+                text_img, baseline = renderer.render_line(
+                    text, font, font_size, line_width)
+                # text_img = renderer.draw(text, font, region_font_size)
+                height, width = text_img.shape[:2]
+
+                if width <= line_width:
+                    break
+                else:
+                    font_size = renderer.calculate_font_size(
+                        font, line_height - recalc, target_width=line_width,
+                        text=text)
+                    log.info('recalculating font size')
+                    log.info(f'received h, w: {height}, {width}, wanted: {line_height}, {line_width}')
+                    log.info(f'line height: {line_height - recalc}')
+                    recalc += 1
 
             # let's say first point is baseline
             top_left = deepcopy(l.baseline[0])

@@ -618,8 +618,8 @@ class Renderer:
         if target_width is not None and target_width <= 0:
             target_width = None
 
-        pseudo_low = 100
-        pseudo_high = 5 * 10**3
+        pseudo_low = 10 * 64
+        pseudo_high = 200 * 64
         font_size = (pseudo_high + pseudo_low) // 2
         face.set_char_size(font_size)
 
@@ -644,10 +644,15 @@ class Renderer:
             else:
                 pseudo_high = font_size
 
+            if pseudo_high - pseudo_low == 1:
+                break
+
             font_size = (pseudo_high + pseudo_low) // 2
 
             face.set_char_size(font_size)
             _, height, _ = self.calculate_bbox(face, text)
+            log.debug(f'Computed height: {height},'
+                      f'edges: {pseudo_low} - {pseudo_high}')
 
         # make sure, that given line fits even if it means smaller font
         while not width_cond(width):
@@ -658,6 +663,8 @@ class Renderer:
 
             face.set_char_size(font_size)
             width, _, _ = self.calculate_bbox(face, text)
+            log.debug(f'Computed width: {width},'
+                      f'edges: {pseudo_low} - {pseudo_high}')
 
         return max(font_size, self.min_font_size)
 

@@ -73,7 +73,6 @@ def write_polygon(img: Image.Image, color_str: str,
 
 def write_rectangle(img: Image.Image, color: Tuple[int, int, int],
                     points: List[Point]) -> Image.Image:
-    log.debug('Rendering rectangle')
     img = img.copy()
     imc = Draw(img)
     imc.rectangle(points, outline=color)
