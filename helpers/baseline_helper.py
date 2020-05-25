@@ -140,9 +140,11 @@ def rerender_page(page: PageLayout, renderer: Renderer,
         # assuming all TextLines in region are of same font size
         longest_line = max(r.lines, key=lambda e: len(e.transcription))
         outer_bbox = calculate_polygon_outer_bbox(longest_line.polygon)
-        line_height = calculate_inner_bbox_height(longest_line.polygon)
+        region_line_height = calculate_inner_bbox_height(longest_line.polygon)
         region_font_size = renderer.calculate_font_size(
-            font, line_height, outer_bbox[1][0] - outer_bbox[0][0])
+            font, region_line_height,
+            target_width=outer_bbox[1][0] - outer_bbox[0][0],
+            text=longest_line.transcription)
 
         for l in r.lines:
             text = l.transcription
@@ -151,11 +153,16 @@ def rerender_page(page: PageLayout, renderer: Renderer,
             line_width = poly[1][0] - poly[0][0]
             line_height = calculate_inner_bbox_height(l.polygon)
             log.debug(f'Line height: {line_height}')
-            # font_size = renderer.calculate_font_size(
-            #     font, line_height, line_width)
+
+            font_size = region_font_size
+            # In case title is in TextRegion with rest of text
+            if line_height >= 1.75 * region_line_height:
+                font_size = renderer.calculate_font_size(
+                    font, line_height, target_width=line_width, text=text)
+
             log.debug(f'Rendering text: "{text}"')
             text_img, baseline = renderer.render_line(
-                text, font, region_font_size, line_width)
+                text, font, font_size, line_width)
             # text_img = renderer.draw(text, font, region_font_size)
             height, width = text_img.shape[:2]
 
@@ -183,7 +190,7 @@ def main(path: str, config, storage):
     """
 
     page = load_page(path)
-    renderer = Renderer(storage.fonts)
+    renderer = Renderer(storage.fonts, 14 * 64)
     viewer = presh.init_global_viewer(config['Common']['viewer'],
                                       config['Common']['tempdir'],
                                       config['Common']['imageformat'])

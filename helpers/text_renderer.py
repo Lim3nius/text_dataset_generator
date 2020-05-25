@@ -512,8 +512,9 @@ class Renderer:
     It's only purpose is to render render given character in given font
     """
 
-    def __init__(self, faces: Dict[str, Face]):
+    def __init__(self, faces: Dict[str, Face], min_font_size: int):
         self.faces = faces
+        self.min_font_size = min_font_size
 
     @cached(cache={})
     def get_face(self, font: str) -> Face:
@@ -609,11 +610,13 @@ class Renderer:
 
     @cached(cache=LRUCache(maxsize=256))
     def calculate_font_size(self, font: str, target_height: int,
-                            target_length: int = None) -> int:
+                            *, target_width: int = None, text: str) -> int:
         face = self.faces[font]
-        # text = "abcdefghijklmnopqrstuvwxyz"
-        text = 'TGHfgqěščřžýáíĚŠČŘŽÝÁÍ'
-        height_epsilon, width_epsilon = 0, 10
+        text = 'TGHfgqěščřžýáíĚŠČŘŽÝÁÍ' if text == '' else text
+        height_epsilon = 1
+
+        if target_width is not None and target_width <= 0:
+            target_width = None
 
         pseudo_low = 100
         pseudo_high = 5 * 10**3
@@ -628,16 +631,14 @@ class Renderer:
         def height_cond(height):
             return (lower_bound <= height <= upper_bound)
 
-        if target_length:
-            lower_length = target_length - width_epsilon
-
+        if target_width:
             def width_cond(width):
-                return (lower_length <= width <= target_length)
+                return (target_width * 0.8 <= width <= target_width)
         else:
             def width_cond(_):
-                return True
+                return False
 
-        while not height_cond(height) and not width_cond(width):
+        while not height_cond(height):
             if height < target_height:
                 pseudo_low = font_size
             else:
@@ -646,9 +647,19 @@ class Renderer:
             font_size = (pseudo_high + pseudo_low) // 2
 
             face.set_char_size(font_size)
-            width, height, _ = self.calculate_bbox(face, text)
+            _, height, _ = self.calculate_bbox(face, text)
 
-        return font_size
+        # make sure, that given line fits even if it means smaller font
+        while not width_cond(width):
+            if width > target_width:
+                font_size -= 64
+            else:
+                break
+
+            face.set_char_size(font_size)
+            width, _, _ = self.calculate_bbox(face, text)
+
+        return max(font_size, self.min_font_size)
 
     @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
     @debug_on_exception([Exception])
