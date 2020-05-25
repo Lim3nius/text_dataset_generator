@@ -117,11 +117,12 @@ def load_page(path: str) -> PageLayout:
 
 def show_baselines(page: PageLayout, img: Image.Image) -> Image.Image:
     for r in page.regions:
+        reg_color = presh.random_color()
         for l in r.lines:
             img = presh.write_points(img, '#FF0000', l.baseline)
             img = presh.write_polygon(img, '#00FF00', l.polygon)
             bbox = calculate_polygon_outer_bbox(l.polygon)
-            img = presh.write_rectangle(img, '#0000FF', bbox)
+            img = presh.write_rectangle(img, reg_color, bbox)
     return img
 
 

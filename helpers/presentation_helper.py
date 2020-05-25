@@ -38,6 +38,10 @@ def np_array_to_img(arr: np.array) -> Image.Image:
     return Image.fromarray(arr)
 
 
+def random_color() -> Tuple[int, int, int]:
+    return tuple(np.random.choice(range(256), size=3))
+
+
 def write_points(img: Image.Image, color_str: str,
                  points: List[int]) -> Image.Image:
     """Function write_points is used for showing list of points
@@ -67,11 +71,9 @@ def write_polygon(img: Image.Image, color_str: str,
     return img
 
 
-@log_function_call('debug')
-def write_rectangle(img: Image.Image, color_str: str,
+def write_rectangle(img: Image.Image, color: Tuple[int, int, int],
                     points: List[Point]) -> Image.Image:
     log.debug('Rendering rectangle')
-    color = Color.getrgb(color_str)
     img = img.copy()
     imc = Draw(img)
     imc.rectangle(points, outline=color)
