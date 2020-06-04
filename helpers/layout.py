@@ -32,12 +32,16 @@ class RegionConfiguration:
         self.regions = regions
         pass
 
+    def __repr__(self) -> str:
+        s = '[' + ','.join([r.__repr__() for r in self.regions]) + ']'
+        return 'RegionConfiguration: ' + s
+
     @staticmethod
     def from_dict(di):
         regions = []
 
         for r in di.get('layouts'):
-            r = Region.from_config(r)
+            r = Region.from_dict(r)
             regions.append(r)
 
         return RegionConfiguration(regions=regions)
@@ -81,22 +85,26 @@ class Region:
         self.sub_regions = sub_regions
         self.box = None
 
-    @staticmethod
-    def from_string(data: str):
-        pass
+    def __repr__(self) -> str:
+        if self.name:
+            return self.name
+        else:
+            return f'<Region[width:{self.width}, height:{self.height}>'
 
     @staticmethod
     def from_dict(d):
         lh = d.get('line_height', 0)
         dir = d.get('direction', '')
         sr = d.get('sub_regions', None)
+        name = d.get('name', '')
 
         if sr:
             sr = [Region.from_dict(r) for r in sr]
 
         try:
             reg = Region(d['width'], d['height'],
-                         line_height=lh, sub_regions=sr, direction=dir)
+                         line_height=lh, sub_regions=sr, direction=dir,
+                         name=name)
         except RegionError as e:
             log.error('Unable to parse region: {e}')
             raise e

@@ -1,0 +1,22 @@
+layouts:
+  - name: 'Text block'
+    height: 1.0
+    width: 1.0
+    padding: 10
+    line_height: 20
+
+  - name: '3 column page'
+    height: 1.0
+    width: 1.0
+    direction: 'horizontal'
+    padding: 10
+    sub_regions:
+      - width: 0.3
+        height: 1.0
+        line_height: 20
+      - width: 0.3
+        height: 1.0
+        line_height: 20
+      - width: 0.3
+        height: 1.0
+        line_height: 20
