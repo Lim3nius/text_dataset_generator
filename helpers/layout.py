@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+'''
+File: layout.py
+Author: Tomáš Lessy
+Email: lessy.mot@gmail.com
+Github: https://github.com/lim3nius
+Description: This module contains helper classes and functions for
+    layout parsing and manipulation
+'''
+
+
 import yaml
 import math
 from logging import getLogger
@@ -11,13 +21,26 @@ import itertools
 log = getLogger()
 
 
-def load_file(path: str):
-    obj = yaml.load(open(path), Loader=yaml.CLoader)
-    return obj
-
-
 class RegionError(Exception):
+    '''Exception representing that problem occured inside Region class'''
     pass
+
+
+class RegionConfiguration:
+    '''RegionConfiguration represents yaml file containing multiple layouts'''
+    def __init__(self, *, regions=[]):
+        self.regions = regions
+        pass
+
+    @staticmethod
+    def from_dict(di):
+        regions = []
+
+        for r in di.get('layouts'):
+            r = Region.from_config(r)
+            regions.append(r)
+
+        return RegionConfiguration(regions=regions)
 
 
 directions = ['vertical', 'horizontal']
@@ -25,9 +48,16 @@ Direction = enum.IntEnum('Direction', directions)
 
 
 class Region:
-    """docstring for Region"""
+    '''
+    Region class represent single region region containing lines of text
+    or divided into multiple other regions
+
+    allows of iteration through regions returning bounding boxes for specified
+    line numbers
+    '''
     def __init__(self, width=100.0, height=100.0,
-                 *, padding=0, line_height=0, sub_regions=None, direction=''):
+                 *, padding=0, line_height=0, sub_regions=None, direction='',
+                 name: str = ''):
         if sub_regions and line_height:
             raise RegionError('line_height and sub_regions present')
         elif not (line_height or sub_regions):
@@ -41,6 +71,7 @@ class Region:
             if not direction:
                 raise RegionError('Unspecified direction for sub regions')
 
+        self.name = name
         self.line_height = line_height
         self.width = width
         self.height = height
@@ -53,6 +84,24 @@ class Region:
     @staticmethod
     def from_string(data: str):
         pass
+
+    @staticmethod
+    def from_dict(d):
+        lh = d.get('line_height', 0)
+        dir = d.get('direction', '')
+        sr = d.get('sub_regions', None)
+
+        if sr:
+            sr = [Region.from_dict(r) for r in sr]
+
+        try:
+            reg = Region(d['width'], d['height'],
+                         line_height=lh, sub_regions=sr, direction=dir)
+        except RegionError as e:
+            log.error('Unable to parse region: {e}')
+            raise e
+
+        return reg
 
     def compute_real_val(self, v, dimension):
         if isinstance(v, int):
@@ -96,28 +145,6 @@ class Region:
         zp = zip(self.sub_regions, width_intervals, height_intervals)
         for (reg, wi, hi) in zp:
             reg.fit_to_region((Point(wi[0], hi[0]), Point(wi[1], hi[1])))
-
-        # slider = top_left
-        # for (i, r) in enumerate(self.sub_regions):
-        #     if self.direction is Direction.vertical:
-        #         height = self.compute_real_val(r.height, reg_height)
-        #         new_bot = slider + Point(0, height)
-        #         r.fit_to_region(
-        #             (slider, Point(bot_right.x, new_bot.y)))
-        #         slider = new_bot
-        #     else:
-        #         width = self.compute_real_val(r.width, reg_width)
-        #         new_right = slider + Point(width, 0)
-        #         print(f'Fit to region: {new_right}')
-        #         r.fit_to_region(
-        #             (slider, Point(new_right.x, bot_right.y)))
-
-        #         if i < len(self.sub_regions) - 1:
-        #             print(f'Increasing for {i}')
-        #             new_right += Point(1, 0)
-
-        #         slider = new_right
-        #         print(f'Slider val: {slider}')
 
     def __iter__(self):
         if not self.box:
@@ -176,3 +203,11 @@ def divide_interval(lower: int, upper: int,
             s = upper
 
     return res
+
+
+def load_layouts(path: str) -> RegionConfiguration:
+    '''load_layout loads region layouts specified in file pointed by path'''
+    with open(path, 'r') as f:
+        d = yaml.safe_load(f)
+
+    return RegionConfiguration.from_dict(d)

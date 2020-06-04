@@ -33,8 +33,8 @@ class TestRegionIteration(unittest.TestCase):
     def test_simple(self):
         r = Region(10, 10, line_height=5, padding=1)
         r.fit_to_region((Point(0, 0), Point(10, 10)))
-        l = list(iter(r))
-        self.assertEqual(l, [(Point(1, 1), Point(9, 5))])
+        li = list(iter(r))
+        self.assertEqual(li, [(Point(1, 1), Point(9, 5))])
 
     def test_simple_division(self):
         r = Region(1.0, 1.0, direction='horizontal',
@@ -120,6 +120,20 @@ class TestDivideInterval(unittest.TestCase):
     def test_empty_interval(self):
         r = divide_interval(42, 42, [1.0, 20])
         self.assertEqual(r, [(42, 42), (42, 42)])
+
+
+class TestRegionFromDict(unittest.TestCase):
+    def test_with_subregions(self):
+        data = {'width': 1.0, 'height': 1.0, 'direction': 'horizontal',
+                'sub_regions': [
+                    {'width': 0.5, 'height': 1.0, 'line_height': 10},
+                    {'width': 0.5, 'height': 1.0, 'line_height': 20}]}
+
+        reg = Region.from_dict(data)
+        self.assertEqual(
+            reg, Region(1.0, 1.0, direction='horizontal',
+                        sub_regions=[Region(0.5, 1.0, line_height=10),
+                                     Region(0.5, 1.0, line_height=20)]))
 
 
 if __name__ == '__main__':
