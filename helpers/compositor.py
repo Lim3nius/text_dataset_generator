@@ -58,8 +58,9 @@ class Compositor:
             font_size = self.renderer.calculate_font_size(font, ln_height)
             text = self.select_text_for_line(ln_width, text_prov, font,
                                              font_size)
-            text_img, _ = self.renderer.render_line(text, font, font_size,
-                                                    ln_width)
+            # text_img, _ = self.renderer.render_line(text, font, font_size,
+            #                                         ln_width)
+            text_img, _ = self.renderer.draw(text, font, font_size)
             self.place_text_on_background(text_img, img,
                                           (line[0].x, line[0].y))
 

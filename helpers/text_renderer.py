@@ -674,7 +674,8 @@ class Renderer:
 
     @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
     @debug_on_exception([Exception])
-    def draw(self, text: str, font: str, font_size: int) -> np.ndarray:
+    def draw(self, text: str, font: str,
+             font_size: int) -> Tuple[np.ndarray, int]:
         """draw returns numpy array containing given text in specified
         font and with given font_size
 

@@ -42,7 +42,6 @@ class TextKeeper:
                 self.pos = 0
             else:
                 raise ValueError('All text is depleted')
-                import pdb; pdb.set_trace()  # XXX BREAKPOINT
 
         return self.words[self.pos]
 
