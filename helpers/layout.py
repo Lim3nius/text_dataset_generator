@@ -28,21 +28,31 @@ class RegionError(Exception):
 
 class RegionConfiguration:
     '''RegionConfiguration represents yaml file containing multiple layouts'''
-    def __init__(self, *, regions=[]):
+    def __init__(self, *, regions=dict()):
         self.regions = regions
-        pass
 
     def __repr__(self) -> str:
-        s = '[' + ','.join([r.__repr__() for r in self.regions]) + ']'
+        s = '{' + ', '.join([f'"{k}"' for k in self.regions.keys()]) + '}'
         return 'RegionConfiguration: ' + s
+
+    def get(self, key):
+        return self.regions[key]
 
     @staticmethod
     def from_dict(di):
-        regions = []
+        regions = {}
 
         for r in di.get('layouts'):
             r = Region.from_dict(r)
-            regions.append(r)
+
+            if not r.name:
+                raise ValueError('Top level layout has to have name')
+
+            if regions.get(r.name):
+                raise ValueError(
+                    f'Found layout name "{r.name}" for second time!')
+
+            regions[r.name] = r
 
         return RegionConfiguration(regions=regions)
 
