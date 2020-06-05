@@ -205,11 +205,12 @@ def rerender_page(page: PageLayout, renderer: Renderer,
 
 
 @exit_on_exception(1)
-def main(path: str, config, storage):
+def main(args, config, storage):
     """
     main handler for generating images from baselines
     """
 
+    path = args.path
     page = load_page(path)
     renderer = Renderer(storage.fonts, 14 * 64)
     viewer = presh.init_global_viewer(config['Common']['viewer'],

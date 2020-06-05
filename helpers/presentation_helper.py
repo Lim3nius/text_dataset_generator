@@ -182,6 +182,12 @@ class ImageViewer:
         self.tmp_dir = tmp_dir
         self.img_format = img_format
 
+    @staticmethod
+    def from_config(config: dict()):
+        return ImageViewer(config['Common']['viewer'],
+                           config['Common']['tempdir'],
+                           config['Common']['imageformat'])
+
     def view_img(self, img: Image.Image):
         if img.mode != 'RGBA':
             img = img.convert('RGBA')

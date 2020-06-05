@@ -523,6 +523,9 @@ class Renderer:
         :returns: face object for given font
         """
 
+        if font in self.faces.keys():
+            return self.faces[font]
+
         p = Path(font)
         if p.exists():
             return Face(p)
@@ -610,7 +613,8 @@ class Renderer:
 
     @cached(cache=LRUCache(maxsize=256))
     def calculate_font_size(self, font: str, target_height: int,
-                            *, target_width: int = None, text: str) -> int:
+                            *, target_width: int = None,
+                            text: str = '') -> int:
         face = self.faces[font]
         text = 'TGHfgqěščřžýáíĚŠČŘŽÝÁÍ' if text == '' else text
         height_epsilon = 1
@@ -636,7 +640,7 @@ class Renderer:
                 return (target_width * 0.8 <= width <= target_width)
         else:
             def width_cond(_):
-                return False
+                return True
 
         while not height_cond(height):
             if height < target_height:

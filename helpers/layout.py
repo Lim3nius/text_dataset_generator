@@ -106,6 +106,7 @@ class Region:
         lh = d.get('line_height', 0)
         dir = d.get('direction', '')
         sr = d.get('sub_regions', None)
+        padding = d.get('padding', 0)
         name = d.get('name', '')
 
         if sr:
@@ -114,7 +115,7 @@ class Region:
         try:
             reg = Region(d['width'], d['height'],
                          line_height=lh, sub_regions=sr, direction=dir,
-                         name=name)
+                         name=name, padding=padding)
         except RegionError as e:
             log.error('Unable to parse region: {e}')
             raise e

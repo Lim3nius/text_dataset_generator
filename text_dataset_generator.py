@@ -24,6 +24,11 @@ from helpers.dict_writer import SyncWriterWrapper
 from helpers import baseline_helper
 from helpers import logger
 from helpers import layout
+from helpers.text_keeper import TextKeeper
+from helpers import misc
+from helpers import compositor
+import helpers.presentation_helper as presh
+from sympy import Point
 
 log = getLogger()
 
@@ -60,6 +65,53 @@ def set_paddings(img, config):
     }
 
 
+def layout_test(args, config, storage):
+    path = args.path
+    log.debug(f'layout parsing with path: {path}')
+    breakpoint()
+
+    rc = layout.load_layouts(path)
+    log.debug('layouts loaded')
+    log.debug(f'loaded: {rc}')
+
+    sys.exit(0)
+
+
+@misc.exit_on_exception(1)
+@misc.debug_on_exception([Exception])
+def generate(args, config, storage, **kwargs):
+    log.debug('Function generate reached')
+    log.debug(f'layout: {args.layout}')
+
+    # load necessary data and preprocess
+    layout_name = ' '.join(args.layout)
+    layout = storage.layouts.get(layout_name)
+    background_name, background = storage.backgrounds.random_pair()
+    font_name = list(storage.fonts.items())[0][0]
+
+    height, width = config['Page']['height'], config['Page']['width']
+    background = presh.ensure_image_shape(background, (height, width))
+
+    layout.fit_to_region((Point(0, 0), Point(width-1, height-1)))
+    log.debug('layout fitted onto region')
+    # breakpoint()
+
+    renderer = text_renderer.Renderer(storage.fonts, 15*64)
+    comp = compositor.Compositor(config, renderer)
+
+    # render image
+    img = comp.compose_image(background, font_name, storage.text, iter(layout))
+    log.info(f'Image composed with font: {font_name}, '
+             f'background: {background_name} ({width} x {height})')
+
+    # view result image
+    im_viewer = presh.ImageViewer.from_config(config)
+    img = presh.np_array_to_img(img)
+    im_viewer.view_img(img)
+
+    sys.exit(0)
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.ini',
@@ -79,10 +131,24 @@ def parse_arguments():
     parser.add_argument('--font', type=str, default=None,
                         help='Specific font to be used')
 
-    sp = parser.add_subparsers(help="sub command")
-    pb = sp.add_parser("baseline", help="foo")
-    pb.add_argument('path', help="Path to file with baseline info")
+    sp = parser.add_subparsers(help='sub commands')
+    pb = sp.add_parser('baseline',
+                       help='Command for rendering images based on'
+                       'page xml files')
+    pb.add_argument('path', help='Path to file with baseline info')
     pb.set_defaults(func=baseline_helper.main)
+
+    pc = sp.add_parser('layout', help='Layout parsing functionality')
+    pc.add_argument('path', help='Path to file containing layout definitions')
+    pc.set_defaults(func=layout_test)
+
+    pd = sp.add_parser('generate', help='Generate according to layout, with'
+                       ' given text and font')
+    pd.add_argument('layout', help='Name of layout to be used', type=str,
+                    nargs='+')
+    pd.add_argument('--cycle', action='store_true',
+                    help='If not enough text, start repeating text')
+    pd.set_defaults(func=generate)
 
     args = parser.parse_args()
     return args
@@ -231,6 +297,9 @@ class Storage:
         else:
             self.fonts = file_helper.load_fonts(config['Common']['fonts'])
 
+        self.layouts = layout.load_layouts(config['Common']['layouts'])
+        self.text = TextKeeper.from_file(config['Common']['input'])
+
 
 def main():
     args = parse_arguments()
@@ -249,7 +318,7 @@ def main():
     file_helper.create_directory_if_not_exists(config['Common']['outputs'])
     file_helper.create_directory_if_not_exists(config['Common']['tempdir'])
     try:
-        args.func(args.path, config, storage)
+        args.func(args, config, storage)
     except Exception:
         pass
 
