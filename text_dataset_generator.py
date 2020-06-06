@@ -344,5 +344,6 @@ if __name__ == "__main__":
 
     except Exception as e:
         log.warning(f'Stopped because of exception: {e}')
-
-    sys.exit(ex_code)
+        ex_code = 1
+    finally:
+        sys.exit(ex_code)
