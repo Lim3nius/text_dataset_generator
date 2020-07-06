@@ -712,6 +712,14 @@ class Renderer:
 
             log.debug(f'Rendering "{c}", w: {w}, h: {h}, top: {top}')
             log.debug(f'Placing character at y: {y} -> {y+h}')
+
+            # width check, sometimes advance is computed incorrectly
+            # so reallocation occurs
+            if x+w > Z.shape[1] - 1:
+                Z1 = np.zeros((height, x+w), dtype=np.ubyte)
+                Z1[0:height, 0:width] += Z
+                Z = Z1
+
             Z[y:y+h, x:x+w] += tmp
             x += (slot.advance.x >> 6)
             previous = c
