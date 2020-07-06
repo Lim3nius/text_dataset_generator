@@ -255,7 +255,7 @@ class Storage:
         self.backgrounds = file_helper.load_images(
             config['Common']['backgrounds'])
         if font:
-            self.fonts = {font: file_helper.load_font(font)}
+            self.fonts = file_helper.LazyLoader([font], file_helper.load_font)
         else:
             self.fonts = file_helper.load_fonts(config['Common']['fonts'])
 

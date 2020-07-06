@@ -30,7 +30,8 @@ def generate(args, config, storage, **kwargs):
     layout_name = ' '.join(args.layout)
     layout = storage.layouts.get(layout_name)
     background_name, background = storage.backgrounds.random_pair()
-    font_name = list(storage.fonts.items())[0][0]
+    # font_name = list(storage.fonts.items())[0][0]
+    font_name, _ = storage.fonts.random_pair()
 
     height, width = config['Page']['height'], config['Page']['width']
     background = presh.ensure_image_shape(background, (height, width))

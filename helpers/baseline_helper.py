@@ -171,10 +171,10 @@ def rerender_page(page: PageLayout, renderer: Renderer,
             # bounding box
             recalc = 0
             while True:
-                text_img, baseline = renderer.render_line(
+                text_img = renderer.render_line(
                     text, font, font_size, line_width)
                 # text_img = renderer.draw(text, font, region_font_size)
-                height, width = text_img.shape[:2]
+                height, width = text_img.bitmap.shape[:2]
 
                 if width <= line_width:
                     break
@@ -183,22 +183,23 @@ def rerender_page(page: PageLayout, renderer: Renderer,
                         font, line_height - recalc, target_width=line_width,
                         text=text)
                     log.info('recalculating font size')
-                    log.info(f'received h, w: {height}, {width}, wanted: {line_height}, {line_width}')
+                    log.info(f'received h, w: {height}, {width},'
+                             f'wanted: {line_height}, {line_width}')
                     log.info(f'line height: {line_height - recalc}')
                     recalc += 1
 
             # let's say first point is baseline
             top_left = deepcopy(l.baseline[0])
-            top_left[1] -= baseline
+            top_left[1] -= text_img.baseline
 
             if width > line_width:
                 log.warn(f'Cropping: {width} > {line_width}')
-                text_img = text_img[:, :line_width, :]
+                text_img.bitmap = text_img.bitmap[:, :line_width, :]
                 width = line_width
 
             log.debug(f'top left: {top_left}')
-            log.debug(f'text image shape {text_img.shape}')
-            c.place_text_on_background(text_img, background, top_left)
+            log.debug(f'text image shape {text_img.bitmap.shape}')
+            c.place_text_on_background(text_img.bitmap, background, top_left)
 
     log.info('Page rendering finished')
     return background

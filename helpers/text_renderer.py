@@ -502,6 +502,27 @@ def render_to_terminal(bitmap, width, height):
         print(''.join(bitmap[i:i+width]))
 
 
+class AnnotatedTextImage:
+    '''
+    AnnotatedTextImage is wrapper class which holds text bitmap
+    and it's metadata
+    '''
+    def __init__(self, bitmap: np.ndarray, text: str, annotations,
+                 baseline: int):
+        self.bitmap = bitmap
+        self.text = text
+        self.annotations = annotations
+        self.baseline = baseline
+
+    @property
+    def width(self):
+        return self.bitmap.shape[1]
+
+    @property
+    def height(self):
+        return self.bitmap.shape[0]
+
+
 class FontPathError(Exception):
     pass
 
@@ -534,7 +555,7 @@ class Renderer:
 
     @debug_on_exception(None)
     def render_line(self,  text: str, font: str,
-                    font_size: int, line_width: int) -> Tuple[np.ndarray, int]:
+                    font_size: int, line_width: int) -> AnnotatedTextImage:
         '''
         render line renders given line, with enlarged spaces so final text
         width is as close to "line_width" as possible
@@ -544,7 +565,7 @@ class Renderer:
         :font_size: size of font which is to be used
         :line_width: optimal width of final image of text
 
-        :returns: Tuple contains np.ndarray containing img and baseline pos
+        :returns: AnnotatedTextImage containing image and it's metadata
         '''
 
         face = self.faces[font]
@@ -564,10 +585,10 @@ class Renderer:
         width_acc = 0
 
         for w in words:
-            w_img, b_line = self.draw(w, font, font_size)
-            width_acc += w_img.shape[1]
-            words_images.append(w_img)
-            baselines.append(b_line)
+            w_img = self.draw(w, font, font_size)
+            width_acc += w_img.bitmap.shape[1]
+            words_images.append(w_img.bitmap)
+            baselines.append(w_img.baseline)
 
         space_width = (line_width - width_acc) // spaces
         line = np.full((height, line_width, 3), 255, dtype=np.ubyte)
@@ -578,7 +599,7 @@ class Renderer:
             h = baseline - bline
             line[h:h+height, ruler:ruler+width, :] = img
             ruler += width + space_width
-        return (line, baseline)
+        return AnnotatedTextImage(line, text, None, baseline)
 
     def calculate_bbox(self, face: Face, text: str) -> Tuple[int, int, int]:
         '''
@@ -675,14 +696,14 @@ class Renderer:
     @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
     @debug_on_exception([Exception])
     def draw(self, text: str, font: str,
-             font_size: int) -> Tuple[np.ndarray, int]:
+             font_size: int) -> AnnotatedTextImage:
         """draw returns numpy array containing given text in specified
         font and with given font_size
 
         :text: text to be rendered
         :font: path to font, which should be used to open
         :font_size: font_size in which character should be rendered
-        :returns: numpy array containing bitmap of rendered image
+        :returns: AnnotatedTextImage containing image and it's metadata
         """
 
         # face = Face(font)
@@ -728,4 +749,4 @@ class Renderer:
         # transform matrix to ndarray representing RGB image
         Z = np.repeat(Z.reshape(Z.shape + (1,)), 3, axis=2)
 
-        return (Z, baseline)
+        return AnnotatedTextImage(Z, text, None, baseline)

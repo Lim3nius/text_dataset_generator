@@ -14,6 +14,7 @@ from sympy import Point
 from typing import Tuple
 
 from helpers import misc
+from helpers import text_renderer as trenderer
 
 
 class Compositor:
@@ -50,7 +51,9 @@ class Compositor:
                 alpha_back * background[ph:ph+h, pw:pw+w, chan])
 
     @misc.debug_on_exception([Exception])
-    def compose_image(self, background, font, text_prov, lines_prov):
+    def compose_image(self, background, font, text_prov,
+                      lines_prov) -> trenderer.AnnotatedTextImage:
+        breakpoint()
         img = np.copy(background)
         for line in lines_prov:
             ln_height = line[1].y - line[0].y + 1
@@ -60,8 +63,8 @@ class Compositor:
                                              font_size)
             # text_img, _ = self.renderer.render_line(text, font, font_size,
             #                                         ln_width)
-            text_img, _ = self.renderer.draw(text, font, font_size)
-            self.place_text_on_background(text_img, img,
+            text_img = self.renderer.draw(text, font, font_size)
+            self.place_text_on_background(text_img.bitmap, img,
                                           (line[0].x, line[0].y))
 
         return img
@@ -84,6 +87,7 @@ class Compositor:
             face.set_char_size(font_size)
             width, _, _ = self.renderer.calculate_bbox(face, text)
             if width >= line_width:
+                word_provider.accept_word()
                 return prev_text
 
             word_provider.accept_word()
