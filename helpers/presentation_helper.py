@@ -175,6 +175,20 @@ def view_file(viewer: str, file_path: str):
         raise Exception('view_file failed with exitcode ' + res.returncode)
 
 
+class DummyViewer:
+    '''Dummy viewer which mimics ImageViewer'''
+    def __init__(self, viewer, img_format, *args, **kwargs):
+        self.viewer = viewer
+        self.img_format = img_format
+
+    def view_img(self, *args, **kwargs):
+        pass
+
+    @staticmethod
+    def from_config(*args, **kwargs):
+        return DummyViewer
+
+
 class ImageViewer:
     """docstring for ClassName"""
     def __init__(self, viewer: str, tmp_dir: str, img_format: str):
@@ -215,4 +229,10 @@ def init_global_viewer(*args, **kwargs) -> ImageViewer:
 
     global global_viewer
     global_viewer = ImageViewer(*args, **kwargs)
+    return global_viewer
+
+
+def init_dummy_viewer(*args, **kwargs) -> DummyViewer:
+    global global_viewer
+    global_viewer = DummyViewer(*args, **kwargs)
     return global_viewer

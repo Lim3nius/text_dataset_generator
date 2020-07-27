@@ -22,52 +22,9 @@ from helpers.text_renderer import Renderer
 import helpers.presentation_helper as presh
 # from helpers.logger import log_function_call
 from helpers.misc import exit_on_exception
+from helpers.compositor import Compositor
 
 log = getLogger()
-
-# Point = Tuple[int, int]
-
-
-class Compositor:
-    """docstring for Compositor"""
-    def __init__(self, config):
-        self.config = config
-
-    def point_on_baseline(x_pos, baseline_segment):
-        """
-        For new character with known X coordinate
-        computes Y position
-        """
-        l = Line(Point(baseline_segment[:2]), Point(baseline_segment[2:]))
-        x = symbols('x')
-        s = solve(l.equation(x=x).subs({'x': x_pos}))
-        return s[0]
-
-    def place_text_on_background(self, text_img: np.ndarray,
-                                 background: np.ndarray,
-                                 point: Tuple[int, int]):
-        '''
-        place_text_on_background places given text strip on background.
-        Position is determined by given point, representing top left corner
-        of text on background
-
-        :text_img: np.ndarray representing text strip. Shape should be
-            (height, width, 3) and text pixels should have 0 values
-        :background: np.ndarray of shape (height, width, 3), containing
-            background data.
-        :point: coordinates of left top corner of text strip on background,
-            data order is (width, height)
-        '''
-
-        h, w = text_img.shape[:2]
-        pw, ph = point
-        # invertion because text black color has value 0
-        alpha_text = 1.0 - (text_img[:, :, -1] / 255.0)
-        alpha_back = 1.0 - alpha_text
-        for chan in range(3):
-            background[ph:ph+h, pw:pw+w, chan] = (
-                alpha_text * text_img[:, :, chan] +
-                alpha_back * background[ph:ph+h, pw:pw+w, chan])
 
 
 def calculate_polygon_outer_bbox(
@@ -108,6 +65,7 @@ def load_page(path: str) -> PageLayout:
                   f', {e}')
         return None
 
+    log.debug(f'Page loaded: id = {page.id}')
     log.warn(f'page size {page.page_size}')
     if page.page_size == (0, 0):
         log.error(f'Invalid file "{path}" has been given')
@@ -127,14 +85,14 @@ def show_baselines(page: PageLayout, img: Image.Image) -> Image.Image:
     return img
 
 
-@presh.view_result_decorator('/tmp/tdg/', 'feh')
+# @presh.view_result_decorator('/tmp/tdg/', 'feh')
 def rerender_page(page: PageLayout, renderer: Renderer,
                   font: str, background: np.array) -> np.array:
     pheight, pwidth = page.page_size
     background = presh.ensure_image_shape(background, (pheight, pwidth))
 
     log.info('Page rendering started')
-    c = Compositor(None)
+    c = Compositor(None, renderer)
 
     for r in page.regions:
 
@@ -214,9 +172,14 @@ def main(args, config, storage):
     path = args.path
     page = load_page(path)
     renderer = Renderer(storage.fonts, 14 * 64)
-    viewer = presh.init_global_viewer(config['Common']['viewer'],
-                                      config['Common']['tempdir'],
-                                      config['Common']['imageformat'])
+
+    if args.no_preview:
+        viewer = presh.init_dummy_viewer(config['Common']['viewer'],
+                                         config['Common']['imageformat'])
+    else:
+        viewer = presh.init_global_viewer(config['Common']['viewer'],
+                                          config['Common']['tempdir'],
+                                          config['Common']['imageformat'])
 
     background_name, background = storage.backgrounds.random_pair()
     log.info(f'Background "{background_name}" loaded')
@@ -226,7 +189,7 @@ def main(args, config, storage):
     background = presh.ensure_image_shape(background, (pheight, pwidth))
     log.debug(f'Background dimensions after shape change {background.shape}')
 
-    font = list(storage.fonts.items())[0][0]
+    font = storage.fonts.random_pair()[0]
     log.debug(f'Using font: {font}')
     gen_page = rerender_page(page, renderer, font, np.copy(background))
     gen_page = show_baselines(page, presh.np_array_to_img(gen_page))

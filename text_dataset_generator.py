@@ -92,6 +92,9 @@ def parse_arguments():
 
     parser.add_argument('--font', type=str, default=None,
                         help='Specific font to be used')
+    parser.add_argument('--no-preview', action='store_true',
+                        help='Disable showing any generated images during '
+                        'generation')
 
     sp = parser.add_subparsers(help='sub commands')
     pb = sp.add_parser('baseline',
