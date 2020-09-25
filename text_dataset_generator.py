@@ -62,18 +62,6 @@ def set_paddings(img, config):
     }
 
 
-def layout_test(args, config, storage):
-    path = args.path
-    log.debug(f'layout parsing with path: {path}')
-    breakpoint()
-
-    rc = layout.load_layouts(path)
-    log.debug('layouts loaded')
-    log.debug(f'loaded: {rc}')
-
-    sys.exit(0)
-
-
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.ini',
@@ -102,10 +90,6 @@ def parse_arguments():
                        'page xml files')
     pb.add_argument('path', help='Path to file with baseline info')
     pb.set_defaults(func=baseline_helper.main)
-
-    pc = sp.add_parser('layout', help='Layout parsing functionality')
-    pc.add_argument('path', help='Path to file containing layout definitions')
-    pc.set_defaults(func=layout_test)
 
     pd = sp.add_parser('generate', help='Generate according to layout, with'
                        ' given text and font')
@@ -306,8 +290,8 @@ def main():
     pcs = []
     log.info(f'starting {args.workers} workers')
 
-    # proper handling of Ctl-c
-    def teardown(signum, frame):
+    # proper handling of SIGINT and SIGTERM
+    def teardown(*_):
         log.debug('Terminating processes')
         for p in pcs:
             p.kill()

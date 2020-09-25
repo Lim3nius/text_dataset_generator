@@ -12,12 +12,10 @@ How to run the script:
 Example:  
 ``python text_dataset_generator.py -c config.ini``
   
-![script output image](https://github.com/xkissm00/text_dataset_generator/blob/master/image.png)
-![script output image with annotations](https://github.com/xkissm00/text_dataset_generator/blob/master/image_annotated.png)
-![script output image semantic](https://github.com/xkissm00/text_dataset_generator/blob/master/image_semantic.png)
-![script output image semantic colored](https://github.com/xkissm00/text_dataset_generator/blob/master/image_semantic_colored.png)
-
-TODO: https://docs.google.com/document/d/14FALCZ9-EJo5KKMF_Ias3ti4t4-aogity3oZEz4783w/edit
+![script output image](Doc/image.png)
+![script output image with annotations](Doc/image_annotated.png)
+![script output image semantic](Doc/image_semantic.png)
+![script output image semantic colored](Doc/image_semantic_colored.png)
 
 Annotations output:
 
