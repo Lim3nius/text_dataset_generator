@@ -26,11 +26,12 @@ def generate(args, config, storage, **kwargs):
     log.debug('Function generate reached')
     log.debug(f'layout: {args.layout}')
 
+
+
     # load necessary data and preprocess
     layout_name = ' '.join(args.layout)
     layout = storage.layouts.get(layout_name)
     background_name, background = storage.backgrounds.random_pair()
-    # font_name = list(storage.fonts.items())[0][0]
     font_name, _ = storage.fonts.random_pair()
 
     height, width = config['Page']['height'], config['Page']['width']
@@ -43,8 +44,11 @@ def generate(args, config, storage, **kwargs):
     renderer = text_renderer.Renderer(storage.fonts, 15*64)
     comp = compositor.Compositor(config, renderer)
 
+    regions = list(iter(layout))
+    log.info(f'Computed regions: {regions}')
+
     # render image
-    img = comp.compose_image(background, font_name, storage.text, iter(layout))
+    img = comp.compose_image(background, font_name, storage.text, regions)
     log.info(f'Image composed with font: {font_name}, '
              f'background: {background_name} ({width} x {height})')
 

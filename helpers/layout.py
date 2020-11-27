@@ -12,12 +12,14 @@ Description: This module contains helper classes and functions for
 
 import yaml
 import math
+import random
 from logging import getLogger
 from sympy import Point
-from typing import Tuple, Union, List
-import enum
+from typing import Tuple, Union, List, Dict
+# import enum
 import itertools
 
+from helpers import misc
 log = getLogger()
 
 
@@ -39,7 +41,8 @@ class RegionConfiguration:
         return self.regions[key]
 
     @staticmethod
-    def from_dict(di):
+    @misc.debug_on_exception([Exception])
+    def from_dict(di: Dict):
         regions = {}
 
         for r in di.get('layouts'):
@@ -57,8 +60,8 @@ class RegionConfiguration:
         return RegionConfiguration(regions=regions)
 
 
-directions = ['vertical', 'horizontal']
-Direction = enum.IntEnum('Direction', directions)
+# directions = ['vertical', 'horizontal']
+# Direction = enum.IntEnum('Direction', directions)
 
 
 class Region:
@@ -70,30 +73,48 @@ class Region:
     line numbers
     '''
     def __init__(self, width=100.0, height=100.0,
-                 *, padding=0, line_height=0, sub_regions=None, direction='',
-                 name: str = ''):
-        if sub_regions and line_height:
-            raise RegionError('line_height and sub_regions present')
-        elif not (line_height or sub_regions):
-            raise RegionError(
-                'have to define one of "line_height" or "sub_regions"')
+                 *, padding=0, line_height=0, content=List[str],
+                 columns: List[int], rows: List[int], name: str = ''):
+        # TODO: Replace these checks for new relevant checks
+        # if sub_regions and line_height:
+        #     raise RegionError('line_height and sub_regions present')
+        # elif not (line_height or sub_regions):
+        #     raise RegionError(
+        #         'have to define one of "line_height" or "sub_regions"')
 
-        if sub_regions:
-            if direction not in directions:
-                raise RegionError(f'Invalid direction value: {direction}')
+        # if sub_regions:
+        #     if direction not in directions:
+        #         raise RegionError(f'Invalid direction value: {direction}')
 
-            if not direction:
-                raise RegionError('Unspecified direction for sub regions')
+        #     if not direction:
+        #         raise RegionError('Unspecified direction for sub regions')
+
+        if columns is not None and rows is not None:
+            raise RegionError('Columns and Rows defined, but not supported')
 
         self.name = name
         self.line_height = line_height
         self.width = width
         self.height = height
         self.padding = padding
-        self.direction = Direction.vertical if direction == 'vertical' \
-            else Direction.horizontal
-        self.sub_regions = sub_regions
+        # self.direction = Direction.vertical if direction == 'vertical' \
+        #     else Direction.horizontal
+        # self.sub_regions = sub_regions
+
+        self.columns = columns
+        self.rows = rows
+        self.content = content
         self.box = None
+
+    def deep_copy(self):
+        if self.content:
+            content = [get_content(c) for c in self.content]
+        else:
+            content = None
+        return Region(self.width, self.height,
+                      padding=self.padding, line_height=self.line_height,
+                      content=content, columns=self.columns,
+                      rows=self.rows, name=self.name)
 
     def __repr__(self) -> str:
         if self.name:
@@ -102,22 +123,40 @@ class Region:
             return f'<Region[width:{self.width}, height:{self.height}>'
 
     @staticmethod
+    @misc.debug_on_exception([Exception])
     def from_dict(d):
         lh = d.get('line_height', 0)
-        dir = d.get('direction', '')
-        sr = d.get('sub_regions', None)
+
+        cols = d.get('columns', '')
+        rows = d.get('rows', '')
+
+        # TODO: make it nicer
+        if '-' in cols:
+            l0, l1 = map(int, cols.split('-'))
+            cols = list(range(l0, l1))
+        elif cols != '':
+            cols = [int(cols)]
+        else:
+            cols = None
+
+        if '-' in rows:
+            l0, l1 = map(int, rows.split('-'))
+            rows = list(range(l0, l1))
+        elif rows != '':
+            rows = [int(rows)]
+        else:
+            rows = None
+
+        con = d.get('content', None)
         padding = d.get('padding', 0)
         name = d.get('name', '')
 
-        if sr:
-            sr = [Region.from_dict(r) for r in sr]
-
         try:
             reg = Region(d['width'], d['height'],
-                         line_height=lh, sub_regions=sr, direction=dir,
+                         line_height=lh, content=con, columns=cols, rows=rows,
                          name=name, padding=padding)
         except RegionError as e:
-            log.error('Unable to parse region: {e}')
+            log.error(f'Unable to parse region "{name}" because: {e}')
             raise e
 
         return reg
@@ -150,18 +189,41 @@ class Region:
             return (low, low + val) if low + val < size else (low, up)
 
         # find splits
-        if self.direction is Direction.vertical:
-            height_intervals = divide_interval(
-                top_left.y, bot_right.y, [r.height for r in self.sub_regions])
-            width_intervals = [val(top_left.x, bot_right.x, r.width)
-                               for r in self.sub_regions]
-        else:
-            width_intervals = divide_interval(
-                top_left.x, bot_right.x, [r.width for r in self.sub_regions])
-            height_intervals = [val(top_left.y, bot_right.y, r.height)
-                                for r in self.sub_regions]
+        # if self.direction is Direction.vertical:
+        #     height_intervals = divide_interval(
+        #         top_left.y, bot_right.y, [r.height for r in self.sub_regions])
+        #     width_intervals = [val(top_left.x, bot_right.x, r.width)
+        #                        for r in self.sub_regions]
+        # else:
+        #     width_intervals = divide_interval(
+        #         top_left.x, bot_right.x, [r.width for r in self.sub_regions])
+        #     height_intervals = [val(top_left.y, bot_right.y, r.height)
+        #                         for r in self.sub_regions]
 
-        zp = zip(self.sub_regions, width_intervals, height_intervals)
+        if self.columns:
+            pick_cols = random.choice(self.columns)
+            # content_idx = random.choice(self.columns)
+            # content = get_content(self.content[content_idx])  # Get actual Region object
+            width_intervals = divide_interval(
+                top_left.x, bot_right.x, [1/pick_cols for _ in range(pick_cols)])
+
+            height_intervals = [val(top_left.y, bot_right.y, self.height)
+                                for r in range(pick_cols)]
+            selected_content = [get_content(str(self.content[0])) for _ in range(pick_cols)]
+        elif self.rows:
+            pick_rows = random.choice(self.rows)
+            # content_idx = random.choice(self.rows)
+            # content = get_content(self.content[content_idx])  # Get actual Region object
+            height_intervals = divide_interval(
+                top_left.y, bot_right.y, [1/pick_rows for _ in range(pick_rows)])
+
+            width_intervals = [val(top_left.x, bot_right.x, self.width)
+                               for r in range(pick_rows)]
+            selected_content = [get_content(str(self.content[0])) for _ in range(pick_rows)]
+
+        self.selected_content = selected_content
+
+        zp = zip(selected_content, width_intervals, height_intervals)
         for (reg, wi, hi) in zp:
             reg.fit_to_region((Point(wi[0], hi[0]), Point(wi[1], hi[1])))
 
@@ -177,7 +239,7 @@ class Region:
                         self.box[0].y, self.box[1].y, self.line_height)
                     if y + self.line_height - 1 <= self.box[1].y)
         else:
-            line_iters = [i for i in self.sub_regions.__iter__()]
+            line_iters = [i for i in self.selected_content]
             return itertools.chain(*line_iters)
 
 
@@ -224,9 +286,27 @@ def divide_interval(lower: int, upper: int,
     return res
 
 
+layouts: Dict[str, RegionConfiguration] = {}
+
+
+def init_layouts(la: Dict[str, RegionConfiguration]):
+    global layouts
+    layouts = la
+
+
+def get_content(content_name: str) -> RegionConfiguration:
+    global layouts
+    log.info(f'Layouts content: {layouts}')
+    layout = layouts[content_name]
+    return layout.deep_copy()
+
+
 def load_layouts(path: str) -> RegionConfiguration:
     '''load_layout loads region layouts specified in file pointed by path'''
     with open(path, 'r') as f:
         d = yaml.safe_load(f)
 
-    return RegionConfiguration.from_dict(d)
+    regions = RegionConfiguration.from_dict(d)
+    global layouts
+    layouts = regions.regions
+    return regions

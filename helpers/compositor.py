@@ -53,7 +53,6 @@ class Compositor:
     @misc.debug_on_exception([Exception])
     def compose_image(self, background, font, text_prov,
                       lines_prov) -> trenderer.AnnotatedTextImage:
-        breakpoint()
         img = np.copy(background)
         for line in lines_prov:
             ln_height = line[1].y - line[0].y + 1

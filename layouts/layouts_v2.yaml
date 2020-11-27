@@ -1,0 +1,25 @@
+layouts:
+  - name: 'Page with columns'
+    height: 1.0
+    width: 1.0
+    columns: '1-5'
+    content:
+      - 'TextArea'
+
+  - name: 'TextArea'
+    height: 1.0
+    width: 1.0
+    line_height: 24
+
+  - name: 'L2'
+    height: 1.0
+    width: 1.0
+    rows: '2'
+    content:
+      - 'Page with columns'
+
+  # TODO: Maybe builtin
+  #- name: 'Blank'
+  #  height: 1.0
+  #  width: 1.0
+  #  line_height:
