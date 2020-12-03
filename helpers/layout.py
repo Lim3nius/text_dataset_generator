@@ -75,38 +75,29 @@ class Region:
     def __init__(self, width=100.0, height=100.0,
                  *, padding=0, line_height=0, content=List[str],
                  columns: List[int], rows: List[int], name: str = ''):
-        # TODO: Replace these checks for new relevant checks
-        # if sub_regions and line_height:
-        #     raise RegionError('line_height and sub_regions present')
-        # elif not (line_height or sub_regions):
-        #     raise RegionError(
-        #         'have to define one of "line_height" or "sub_regions"')
-
-        # if sub_regions:
-        #     if direction not in directions:
-        #         raise RegionError(f'Invalid direction value: {direction}')
-
-        #     if not direction:
-        #         raise RegionError('Unspecified direction for sub regions')
-
-        if columns is not None and rows is not None:
-            raise RegionError('Columns and Rows defined, but not supported')
 
         self.name = name
         self.line_height = line_height
         self.width = width
         self.height = height
-        self.padding = padding
-        # self.direction = Direction.vertical if direction == 'vertical' \
-        #     else Direction.horizontal
-        # self.sub_regions = sub_regions
 
+        if name == 'Blank':
+            return
+
+        self.padding = padding
         self.columns = columns
         self.rows = rows
         self.content = content
         self.box = None
 
+        if columns is not None and rows is not None:
+            raise RegionError('Columns and Rows defined, but not supported')
+
     def deep_copy(self):
+        if self.name == 'Blank':
+            return Region(self.width, self.height, name=self.name,
+                          columns=None, rows=None)
+
         if self.content:
             content = [get_content(c) for c in self.content]
         else:
@@ -126,6 +117,7 @@ class Region:
     @misc.debug_on_exception([Exception])
     def from_dict(d):
         lh = d.get('line_height', 0)
+        name = d.get('name', '')
 
         cols = d.get('columns', '')
         rows = d.get('rows', '')
@@ -149,7 +141,6 @@ class Region:
 
         con = d.get('content', None)
         padding = d.get('padding', 0)
-        name = d.get('name', '')
 
         try:
             reg = Region(d['width'], d['height'],
@@ -170,6 +161,9 @@ class Region:
             raise RegionError('invalid dimension value given')
 
     def fit_to_region(self, region: Tuple[Point, Point]):
+        if self.name == 'Blank':
+            return
+
         top_left, bot_right = region
         if self.padding:
             top_left += Point(self.padding, self.padding)
@@ -188,38 +182,26 @@ class Region:
             val -= 1
             return (low, low + val) if low + val < size else (low, up)
 
-        # find splits
-        # if self.direction is Direction.vertical:
-        #     height_intervals = divide_interval(
-        #         top_left.y, bot_right.y, [r.height for r in self.sub_regions])
-        #     width_intervals = [val(top_left.x, bot_right.x, r.width)
-        #                        for r in self.sub_regions]
-        # else:
-        #     width_intervals = divide_interval(
-        #         top_left.x, bot_right.x, [r.width for r in self.sub_regions])
-        #     height_intervals = [val(top_left.y, bot_right.y, r.height)
-        #                         for r in self.sub_regions]
-
         if self.columns:
             pick_cols = random.choice(self.columns)
-            # content_idx = random.choice(self.columns)
+            # content_idx = random.choice(self.content)
             # content = get_content(self.content[content_idx])  # Get actual Region object
             width_intervals = divide_interval(
                 top_left.x, bot_right.x, [1/pick_cols for _ in range(pick_cols)])
 
             height_intervals = [val(top_left.y, bot_right.y, self.height)
                                 for r in range(pick_cols)]
-            selected_content = [get_content(str(self.content[0])) for _ in range(pick_cols)]
+            selected_content = [get_content(str(random.choice(self.content))) for _ in range(pick_cols)]
         elif self.rows:
             pick_rows = random.choice(self.rows)
-            # content_idx = random.choice(self.rows)
+            # content_idx = random.choice(self.content)
             # content = get_content(self.content[content_idx])  # Get actual Region object
             height_intervals = divide_interval(
                 top_left.y, bot_right.y, [1/pick_rows for _ in range(pick_rows)])
 
             width_intervals = [val(top_left.x, bot_right.x, self.width)
                                for r in range(pick_rows)]
-            selected_content = [get_content(str(self.content[0])) for _ in range(pick_rows)]
+            selected_content = [get_content(str(random.choice(self.content))) for _ in range(pick_rows)]
 
         self.selected_content = selected_content
 
@@ -228,6 +210,9 @@ class Region:
             reg.fit_to_region((Point(wi[0], hi[0]), Point(wi[1], hi[1])))
 
     def __iter__(self):
+        if self.name == 'Blank':
+            return iter([])
+
         if not self.box:
             raise RegionError(
                 'Have to call "fit_to_region", before iterating')
