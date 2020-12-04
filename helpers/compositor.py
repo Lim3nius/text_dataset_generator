@@ -11,10 +11,11 @@ Description: his module containg Compositor class used to compose
 
 import numpy as np
 from sympy import Point
-from typing import Tuple
+from typing import Tuple, List
 
 from helpers import misc
 from helpers import text_renderer as trenderer
+from helpers.text_keeper import TextKeeper
 
 
 class Compositor:
@@ -51,9 +52,11 @@ class Compositor:
                 alpha_back * background[ph:ph+h, pw:pw+w, chan])
 
     @misc.debug_on_exception([Exception])
-    def compose_image(self, background, font, text_prov,
-                      lines_prov) -> trenderer.AnnotatedTextImage:
+    def compose_image(self, background: np.ndarray, font: str, text_prov: TextKeeper,
+                      lines_prov: List[Tuple[Point, Point]]
+                      ) -> Tuple[np.ndarray, List[trenderer.AnnotatedTextImage]]:
         img = np.copy(background)
+        text_imgs = []
         for line in lines_prov:
             ln_height = line[1].y - line[0].y + 1
             ln_width = line[1].x - line[0].x + 1
@@ -65,11 +68,13 @@ class Compositor:
             text_img = self.renderer.draw(text, font, font_size)
             self.place_text_on_background(text_img.bitmap, img,
                                           (line[0].x, line[0].y))
+            text_img.move(Point(line[0]))
+            text_imgs.append(text_img)
 
-        return img
+        return img, text_imgs
 
     @misc.debug_on_exception([Exception])
-    def select_text_for_line(self, line_width: int, word_provider,
+    def select_text_for_line(self, line_width: int, word_provider: TextKeeper,
                              font: str, font_size: int) -> str:
         '''select_text_for_line returns text which fits into given line'''
         text = ''

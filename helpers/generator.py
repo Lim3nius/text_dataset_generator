@@ -13,11 +13,19 @@ from logging import getLogger
 import helpers.presentation_helper as presh
 from helpers import compositor
 from helpers import text_renderer
-from sympy import Point
 import sys
+import pero_ocr.document_ocr.layout as pageXML
+from sympy import Point
+from typing import List, Tuple
 
 
 log = getLogger()
+
+
+# Helper function to generate bounding polygon from bounding box
+def gen_bounding_polygon(bbox: Tuple[Point, Point]) -> List[List[int]]:
+    return [list(map(float, p)) for p in [bbox[0], Point(bbox[1].x, bbox[0].y),
+                                          bbox[1], Point(bbox[0].x, bbox[1].y)]]
 
 
 @misc.exit_on_exception(1)
@@ -25,8 +33,6 @@ log = getLogger()
 def generate(args, config, storage, **kwargs):
     log.debug('Function generate reached')
     log.debug(f'layout: {args.layout}')
-
-
 
     # load necessary data and preprocess
     layout_name = ' '.join(args.layout)
@@ -36,19 +42,22 @@ def generate(args, config, storage, **kwargs):
 
     height, width = config['Page']['height'], config['Page']['width']
     background = presh.ensure_image_shape(background, (height, width))
+    page = pageXML.PageLayout(id='nafjasafn', page_size=(height, width))
 
     layout.fit_to_region((Point(0, 0), Point(width-1, height-1)))
     log.debug('layout fitted onto region')
-    # breakpoint()
 
     renderer = text_renderer.Renderer(storage.fonts, 15*64)
     comp = compositor.Compositor(config, renderer)
 
     regions = list(iter(layout))
     log.info(f'Computed regions: {regions}')
+    page.regions = [pageXML.RegionLayout(id=str(i), polygon=gen_bounding_polygon(r))
+                    for (i, r) in enumerate(regions)]
+
 
     # render image
-    img = comp.compose_image(background, font_name, storage.text, regions)
+    img, line_imgs = comp.compose_image(background, font_name, storage.text, regions)
     log.info(f'Image composed with font: {font_name}, '
              f'background: {background_name} ({width} x {height})')
 
@@ -56,5 +65,6 @@ def generate(args, config, storage, **kwargs):
     im_viewer = presh.ImageViewer.from_config(config)
     img = presh.np_array_to_img(img)
     im_viewer.view_img(img)
+    print(page.to_pagexml_string())
 
     sys.exit(0)

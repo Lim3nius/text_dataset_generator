@@ -4,7 +4,8 @@ import numpy as np
 import math
 from cachetools import cached, LRUCache
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
+from sympy import Point
 
 # from helpers import file_helper, image_helper
 
@@ -502,17 +503,29 @@ def render_to_terminal(bitmap, width, height):
         print(''.join(bitmap[i:i+width]))
 
 
+class GeneralAnnotation:
+    def __init__(self, width: int, height: int, point: Point):
+        self.width = width
+        self.height = height
+        self.left_top_point = point
+
+    def move(self, by: Point):
+        self.left_top_point += by
+
+
 class AnnotatedTextImage:
     '''
     AnnotatedTextImage is wrapper class which holds text bitmap
     and it's metadata
     '''
-    def __init__(self, bitmap: np.ndarray, text: str, annotations,
-                 baseline: int):
+    def __init__(self, bitmap: np.ndarray, text: str,
+                 annotations: List[GeneralAnnotation], baseline: int,
+                 point: Point):
         self.bitmap = bitmap
         self.text = text
         self.annotations = annotations
         self.baseline = baseline
+        self.point = point
 
     @property
     def width(self):
@@ -521,6 +534,11 @@ class AnnotatedTextImage:
     @property
     def height(self):
         return self.bitmap.shape[0]
+
+    def move(self, by: Point):
+        self.point += by
+        for a in self.annotations:
+            a.move(by)
 
 
 class FontPathError(Exception):
@@ -580,26 +598,31 @@ class Renderer:
         if spaces == 0 or line_width <= 1.1 * width:
             return self.draw(text, font, font_size)
 
-        words_images = []
+        words_images: List[AnnotatedTextImage] = []
         baselines = []
         width_acc = 0
 
+        # generate image for each word, and save it's baseline to list
         for w in words:
             w_img = self.draw(w, font, font_size)
             width_acc += w_img.bitmap.shape[1]
             words_images.append(w_img.bitmap)
             baselines.append(w_img.baseline)
 
+        # calculate optimal width of space, so that text will fill specified bounding box
+        # and alocate numpy array for resulting image
         space_width = (line_width - width_acc) // spaces
         line = np.full((height, line_width, 3), 255, dtype=np.ubyte)
         ruler = 0
 
+        # place words image on it's final places, divided by computed space width
         for (img, bline) in zip(words_images, baselines):
             height, width = img.shape[:2]
             h = baseline - bline
             line[h:h+height, ruler:ruler+width, :] = img
+            img.move(Point(ruler, h))  # update image annotation
             ruler += width + space_width
-        return AnnotatedTextImage(line, text, None, baseline)
+        return AnnotatedTextImage(line, text, baseline, Point(0, 0))
 
     def calculate_bbox(self, face: Face, text: str) -> Tuple[int, int, int]:
         '''
@@ -715,6 +738,7 @@ class Renderer:
                   f'baseline: {baseline}')
 
         Z = np.zeros((height, width), dtype=np.ubyte)
+        annotations: List[GeneralAnnotation] = []
 
         # Draw text
         x, y = 0, 0
@@ -730,6 +754,9 @@ class Renderer:
             x += (kerning.x >> 6)
             tmp = np.array(
                 bitmap.buffer, dtype='ubyte').reshape(h, w)
+
+            # Save annotation
+            annotations.append(GeneralAnnotation(w, h, Point(x, y)))
 
             log.debug(f'Rendering "{c}", w: {w}, h: {h}, top: {top}')
             log.debug(f'Placing character at y: {y} -> {y+h}')
@@ -749,4 +776,4 @@ class Renderer:
         # transform matrix to ndarray representing RGB image
         Z = np.repeat(Z.reshape(Z.shape + (1,)), 3, axis=2)
 
-        return AnnotatedTextImage(Z, text, None, baseline)
+        return AnnotatedTextImage(Z, text, annotations, baseline, Point(0, 0))

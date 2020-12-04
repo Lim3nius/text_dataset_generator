@@ -210,6 +210,10 @@ class Region:
             reg.fit_to_region((Point(wi[0], hi[0]), Point(wi[1], hi[1])))
 
     def __iter__(self):
+        '''
+        Returns iterator which returns Tuple(Point, Point)
+        representing bouning box, with top left, right bottom points
+        '''
         if self.name == 'Blank':
             return iter([])
 
