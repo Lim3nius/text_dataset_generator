@@ -60,10 +60,6 @@ class RegionConfiguration:
         return RegionConfiguration(regions=regions)
 
 
-# directions = ['vertical', 'horizontal']
-# Direction = enum.IntEnum('Direction', directions)
-
-
 class Region:
     '''
     Region class represent single region region containing lines of text
@@ -203,16 +199,28 @@ class Region:
                                for r in range(pick_rows)]
             selected_content = [get_content(str(random.choice(self.content))) for _ in range(pick_rows)]
 
+        # selected content means selected layouts for subregions
         self.selected_content = selected_content
 
         zp = zip(selected_content, width_intervals, height_intervals)
         for (reg, wi, hi) in zp:
             reg.fit_to_region((Point(wi[0], hi[0]), Point(wi[1], hi[1])))
 
+    def get_text_regions_generators(self) -> List[List[Point]]:
+        if self.line_height != 0:
+            return [[(Point(self.box[0].x, y),
+                     Point(self.box[1].x, y + self.line_height - 1))
+                    for y in range(
+                        self.box[0].y, self.box[1].y, self.line_height)
+                    if y + self.line_height - 1 <= self.box[1].y]]
+        else:
+            return [i for i in self.selected_content]
+
     def __iter__(self):
         '''
         Returns iterator which returns Tuple(Point, Point)
-        representing bouning box, with top left, right bottom points
+        representing TextLine with bounding box created from
+        top left and right bottom points
         '''
         if self.name == 'Blank':
             return iter([])

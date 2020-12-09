@@ -540,6 +540,10 @@ class AnnotatedTextImage:
         for a in self.annotations:
             a.move(by)
 
+    @property
+    def bounding_box(self) -> Tuple[Point, Point]:
+        return (self.point, self.point + Point(self.width, self.height))
+
 
 class FontPathError(Exception):
     pass

@@ -53,23 +53,26 @@ class Compositor:
 
     @misc.debug_on_exception([Exception])
     def compose_image(self, background: np.ndarray, font: str, text_prov: TextKeeper,
-                      lines_prov: List[Tuple[Point, Point]]
-                      ) -> Tuple[np.ndarray, List[trenderer.AnnotatedTextImage]]:
+                      lines_prov: List[List[Tuple[Point, Point]]]
+                      ) -> Tuple[np.ndarray, List[List[trenderer.AnnotatedTextImage]]]:
         img = np.copy(background)
         text_imgs = []
-        for line in lines_prov:
-            ln_height = line[1].y - line[0].y + 1
-            ln_width = line[1].x - line[0].x + 1
-            font_size = self.renderer.calculate_font_size(font, ln_height)
-            text = self.select_text_for_line(ln_width, text_prov, font,
-                                             font_size)
-            # text_img, _ = self.renderer.render_line(text, font, font_size,
-            #                                         ln_width)
-            text_img = self.renderer.draw(text, font, font_size)
-            self.place_text_on_background(text_img.bitmap, img,
-                                          (line[0].x, line[0].y))
-            text_img.move(Point(line[0]))
-            text_imgs.append(text_img)
+        for region in lines_prov:
+            region_txt_imgs = []
+            for line in region:
+                ln_height = line[1].y - line[0].y + 1
+                ln_width = line[1].x - line[0].x + 1
+                font_size = self.renderer.calculate_font_size(font, ln_height)
+                text = self.select_text_for_line(ln_width, text_prov, font,
+                                                 font_size)
+                # text_img, _ = self.renderer.render_line(text, font, font_size,
+                #                                         ln_width)
+                text_img = self.renderer.draw(text, font, font_size)
+                self.place_text_on_background(text_img.bitmap, img,
+                                              (line[0].x, line[0].y))
+                text_img.move(Point(line[0]))
+                region_txt_imgs.append(text_img)
+            text_imgs.append(region_txt_imgs)
 
         return img, text_imgs
 
