@@ -1,0 +1,25 @@
+layouts:
+  - name: 'Page with title'
+    rows: '2'
+    content:
+      - sub:
+        area: '0.1-0.25'
+        rules:
+          - name: 'H1'
+            probability: 0.8
+          - name: 'Text block'
+            probability: 0.2
+      - sub:
+        area: '*'
+        rules:
+          - name: 'Text block'
+            probability: 1.0
+  - name: 'H1'
+    font: 'Arial'
+    font_size: 42
+    line_spacing: 10
+
+  - name: 'Text block'
+    font: 'Sans Serif'
+    font_size: 24
+    line_spacing: 5
