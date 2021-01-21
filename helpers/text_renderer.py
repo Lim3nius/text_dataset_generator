@@ -2,6 +2,7 @@ from __future__ import print_function
 from freetype import Face, Matrix, Vector
 import numpy as np
 import math
+import string
 from cachetools import cached, LRUCache
 from pathlib import Path
 from typing import Dict, Tuple, List
@@ -544,9 +545,19 @@ class AnnotatedTextImage:
     def bounding_box(self) -> Tuple[Point, Point]:
         return (self.point, self.point + Point(self.width, self.height))
 
+    def baseline_with_context(self) -> List[List[int]]:
+        return [[int(self.point.x), int(self.point.y + self.baseline)],
+                [int(self.point.x + self.width), int(self.point.y + self.baseline)]]
+
 
 class FontPathError(Exception):
     pass
+
+
+# default_renderer is inicialized with result of
+# first call to renderer __init__
+# global default_renderer
+default_renderer: 'Renderer' = None
 
 
 class Renderer:
@@ -558,6 +569,10 @@ class Renderer:
     def __init__(self, faces: Dict[str, Face], min_font_size: int):
         self.faces = faces
         self.min_font_size = min_font_size
+
+        global default_renderer
+        if default_renderer is None:
+            default_renderer = self
 
     @cached(cache={})
     def get_face(self, font: str) -> Face:
@@ -719,6 +734,15 @@ class Renderer:
                       f'edges: {pseudo_low} - {pseudo_high}')
 
         return max(font_size, self.min_font_size)
+
+    @cached(cache=LRUCache(maxsize=10))
+    def calculate_line_height(self, font: str, font_size: int) -> Tuple[int, int]:
+        '''
+        Calculates line_height for given font with size font_size
+        :return: line_height and line_baseline position
+        '''
+        res = self.draw(string.ascii_letters, font, font_size)
+        return res.height, res.baseline
 
     @cached(cache=LRUCache(maxsize=52*4))  # 4 full ascii character sets
     @debug_on_exception([Exception])

@@ -2,24 +2,22 @@ layouts:
   - name: 'Page with title'
     rows: '2'
     content:
-      - sub:
-        area: '0.1-0.25'
+      - area: '0.3-0.4'
         rules:
           - name: 'H1'
             probability: 0.8
           - name: 'Text block'
             probability: 0.2
-      - sub:
-        area: '*'
+      - area: '*'
         rules:
           - name: 'Text block'
             probability: 1.0
   - name: 'H1'
-    font: 'Arial'
-    font_size: 42
-    line_spacing: 10
+    font: 'FontsSelection/FreeSerif.otf'
+    font_size: 40
+    spacing: 10
 
   - name: 'Text block'
-    font: 'Sans Serif'
-    font_size: 24
-    line_spacing: 5
+    font: 'FontsSelection/Ubuntu-B.ttf'
+    font_size: 20
+    spacing: 5

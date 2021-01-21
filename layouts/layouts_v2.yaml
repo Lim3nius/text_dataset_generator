@@ -9,7 +9,10 @@ layouts:
   - name: 'TextArea'
     height: 1.0
     width: 1.0
-    line_height: 24
+    # line_height: 24
+    font: 'Arial'
+    font_height: 23
+    alignment: 'center'
 
   - name: 'L2'
     height: 1.0
@@ -32,3 +35,15 @@ layouts:
   - name: 'Blank'
     height: 1.0
     width: 1.0
+
+  - name: 'Page with title'
+    rows: '3'
+    content:
+      - sub:
+        area: '0.2-0.5'
+        # [(pravidlo, pravdepodobnost)]
+        pravidla: [ {'3 cols', 40%, {chaos}}, ('ffff', 60%) ]
+      - sub:
+        area: '*'
+      #   '2 cols' 0.3
+      # - '4 cols' 0.2

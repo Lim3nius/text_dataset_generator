@@ -38,6 +38,8 @@ def generate(args, config, storage, **kwargs):
     log.debug(f'layout: {args.layout}')
 
     # load necessary data and preprocess
+    renderer = text_renderer.Renderer(storage.fonts, 15*64)
+    print(text_renderer.default_renderer)
     layout_name = ' '.join(args.layout)
     layout = storage.layouts.get(layout_name)
     background_name, background = storage.backgrounds.random_pair()
@@ -47,44 +49,53 @@ def generate(args, config, storage, **kwargs):
     background = presh.ensure_image_shape(background, (height, width))
     page = pageXML.PageLayout(id='nafjasafn', page_size=(height, width))
 
-    layout.fit_to_region((Point(0, 0), Point(width-1, height-1)))
+    layout.fit_to_region(Point(0, 0), Point(width-1, height-1))
     log.debug('layout fitted onto region')
 
-    renderer = text_renderer.Renderer(storage.fonts, 15*64)
+    # renderer = text_renderer.Renderer(storage.fonts, 15*64)
+    # print(text_renderer.default_renderer)
     comp = compositor.Compositor(config, renderer)
 
-    # regions = list(iter(layout))
-    regions = layout.get_text_regions_generators()
+    regions = list(layout)
     log.info(f'Computed regions: {regions}')
-    # breakpoint()
 
     # render image
-    img, line_imgs = comp.compose_image(background, font_name, storage.text, regions)
+    img = background
+    for data_reg in regions:
+        img, line_imgs = comp.compose_image(img, data_reg.font, storage.text,
+                                            data_reg, font_size=data_reg.font_size)
 
     log.info(f'Image composed with font: {font_name}, '
              f'background: {background_name} ({width} x {height})')
 
-    page.regions = []
-    for (i1, region) in enumerate(line_imgs):
-        text_lines = []
-        for (i2, line) in enumerate(region):
-            t = pageXML.TextLine(
-                id=str(i2), baseline=[[line.baseline, int(line.point.x)]],
-                polygon=gen_bounding_polygon(line.bounding_box),
-                transcription=line.text)
-            text_lines.append(t)
+    # generate page regions description
+    # page.regions = []
+    # for (i1, region) in enumerate(line_imgs):
+    #     text_lines = []
+    #     minx, miny = 10**9, 10**9
+    #     maxx, maxy = 0, 0
+    #     for (i2, line) in enumerate(region):
+    #         t = pageXML.TextLine(
+    #             id=str(i2), baseline=line.baseline_with_context(),
+    #             polygon=gen_bounding_polygon(line.bounding_box),
+    #             transcription=line.text)
+    #         text_lines.append(t)
+    #         minx = min(int(line.point.x), minx)
+    #         maxx = max(int(line.point.x), maxx)
+    #         miny = min(int(line.point.y), miny)
+    #         maxy = max(int(line.point.y), maxy)
 
-        rl = pageXML.RegionLayout(id=str(i1), polygon=[[42.0, 42.0], [3,14, 2,71]])
-        rl.lines = text_lines
-        # rl = pageXML.RegionLayout(id=str(i), polygon=gen_bounding_polygon(r))
-        page.regions.append(rl)
+    #     rl = pageXML.RegionLayout(id=str(i1), polygon=[[minx, miny], [minx, maxy], [maxx, maxy], [minx, maxy]])
+    #     rl.lines = text_lines
+    #     # rl = pageXML.RegionLayout(id=str(i), polygon=gen_bounding_polygon(r))
+    #     page.regions.append(rl)
 
     # view result image
     im_viewer = presh.ImageViewer.from_config(config)
     img = presh.np_array_to_img(img)
     im_viewer.view_img(img)
-    breakpoint()
-    # import IPython; IPython.embed()
     print(page.to_pagexml_string())
+    with open('/tmp/tdg/page.xml', 'w') as fd:
+        fd.write(page.to_pagexml_string())
 
     sys.exit(0)
