@@ -30,6 +30,10 @@ from helpers import generator as genm
 log = getLogger()
 
 
+# HACK: allow to load git submodule pero-ocr
+sys.path.append('./pero-ocr')
+
+
 def update_annotations(annotations, padding_left, padding_top):
     new_annotations = []
     for annotation in annotations:
